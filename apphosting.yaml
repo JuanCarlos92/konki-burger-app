@@ -2,6 +2,15 @@
 # https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic
+  # Aumenta este valor si quieres iniciar automáticamente más instancias 
+  # en respuesta a un aumento de tráfico.
   maxInstances: 1
+
+  # CONFIGURACIÓN DE VARIABLES DE ENTORNO Y SECRETOS (Debe ir dentro de runConfig)
+  env:
+    - variable: SENDGRID_API_KEY
+      # El nombre de la variable de entorno que usarás en tu código (ej: process.env.SENDGRID_API_KEY)
+      secret: SENDGRID_API_KEY
+      # ✅ INDICAMOS QUE EL SECRETO DEBE ESTAR DISPONIBLE EN TIEMPO DE EJECUCIÓN
+      availability:
+        - RUNTIME
