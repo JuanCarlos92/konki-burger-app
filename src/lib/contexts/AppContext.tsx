@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
@@ -83,11 +84,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [firebaseUser, firestore]);
   const { data: userProfileData, isLoading: isUserProfileLoading } = useDoc<User>(userProfileRef);
 
-  const adminRoleRef = useMemoFirebase(() => {
-    if (!firebaseUser) return null;
-    return doc(firestore, 'roles_admin', firebaseUser.uid);
-  }, [firebaseUser, firestore]);
-  const { data: adminRoleDoc, isLoading: isAdminRoleLoading } = useDoc(adminRoleRef);
+  // Admin status is now based on email, so we don't need to check roles_admin collection.
+  const isAdmin = useMemo(() => firebaseUser?.email === 'konkiburger@gmail.com', [firebaseUser]);
   
   // Load cart from Firestore for logged-in user
   const loadCartFromFirestore = useCallback(async (uid: string) => {
@@ -200,9 +198,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [userProfileData, isUserProfileLoading, firebaseUser]);
 
-  const isAdmin = useMemo(() => !!adminRoleDoc, [adminRoleDoc]);
   const isAuthenticated = !!firebaseUser;
-  const isUserLoading = !!(isAuthLoading || (firebaseUser && (isUserProfileLoading || isAdminRoleLoading || isCartLoading)));
+  const isUserLoading = !!(isAuthLoading || (firebaseUser && (isUserProfileLoading || isCartLoading)));
   
   const createFirestoreUser = async (user: FirebaseUser, name?: string | null, address?: string | null) => {
     const userRef = doc(firestore, "users", user.uid);
@@ -220,30 +217,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       address: address || "Not provided",
     };
 
-    const batch = writeBatch(firestore);
-    batch.set(userRef, newUserProfile);
-
-    // Check if any admins exist. If not, make this new user an admin.
-    const adminRolesCollection = collection(firestore, 'roles_admin');
-    const adminQuery = query(adminRolesCollection, limit(1));
-    const adminSnapshot = await getDocs(adminQuery);
-
-    if (adminSnapshot.empty) {
-      const newAdminRoleRef = doc(firestore, "roles_admin", user.uid);
-      batch.set(newAdminRoleRef, { admin: true });
-      toast({
-        title: "Admin Account Granted",
-        description: "No admin existed. This account now has admin privileges.",
-      });
-    }
-
     try {
-      await batch.commit();
-      // After creating profile, set it in state
+      await setDoc(userRef, newUserProfile);
       setCurrentUser({ id: user.uid, ...newUserProfile });
     } catch (error) {
       errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: `batch write for user ${user.uid}`,
+        path: `users/${user.uid}`,
         operation: 'create',
         requestResourceData: { newUserProfile }
       }));
@@ -397,63 +376,55 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const updateOrderStatus = async (orderId: string, status: Order['status'], customerEmail: string, pickupTime?: string) => {
     const publicOrderRef = doc(firestore, 'orders', orderId);
     
-    try {
-        const orderSnap = await getDoc(publicOrderRef);
-        if (!orderSnap.exists()) {
-            throw new Error("Order not found");
-        }
-        const orderData = orderSnap.data() as Order;
-        const userId = orderData.userId;
+    const orderSnap = await getDoc(publicOrderRef);
+    if (!orderSnap.exists()) {
+        throw new Error("Order not found");
+    }
+    const orderData = orderSnap.data() as Order;
+    const userId = orderData.userId;
 
-        const batch = writeBatch(firestore);
-        
-        const updateData: any = { status };
-        if (pickupTime) {
-            updateData.pickupTime = pickupTime;
-        }
-        
-        // Update public order
-        batch.update(publicOrderRef, updateData);
+    const batch = writeBatch(firestore);
+    
+    const updateData: any = { status };
+    if (pickupTime) {
+        updateData.pickupTime = pickupTime;
+    }
+    
+    // Update public order
+    batch.update(publicOrderRef, updateData);
 
-        // Update user-specific order
-        const userOrderRef = doc(firestore, `users/${userId}/orders`, orderId);
-        batch.update(userOrderRef, updateData);
+    // Update user-specific order
+    const userOrderRef = doc(firestore, `users/${userId}/orders`, orderId);
+    batch.update(userOrderRef, updateData);
 
-        await batch.commit();
+    await batch.commit();
 
-        const fullOrderDetails: Order = {
-          ...orderData,
-          ...updateData,
-          id: orderId,
-          createdAt: orderData.createdAt, // ensure timestamp is preserved
-        };
+    const fullOrderDetails: Order = {
+      ...orderData,
+      ...updateData,
+      id: orderId,
+      createdAt: orderData.createdAt, // ensure timestamp is preserved
+    };
 
-        if (status === "Accepted") {
-            const emailResult = await sendConfirmationEmailAction(fullOrderDetails);
-            if (emailResult && emailResult.success) {
-                 toast({ 
-                    title: "Order Accepted!", 
-                    description: `Pickup time: ${pickupTime}. Email process initiated.`
-                });
-            } else {
-                 toast({ 
-                    title: "Order Accepted!", 
-                    description: `Pickup time: ${pickupTime}. Email configured in simulation mode.`
-                });
-            }
-        } else if (status === "Rejected") {
-            toast({
-                variant: "destructive",
-                title: "Order Rejected",
-                description: `Notification for ${customerEmail} simulated.`,
+    if (status === "Accepted") {
+        const emailResult = await sendConfirmationEmailAction(fullOrderDetails);
+        if (emailResult && emailResult.success) {
+             toast({ 
+                title: "Order Accepted!", 
+                description: `Pickup time: ${pickupTime}. Email process initiated.`
+            });
+        } else {
+             toast({ 
+                title: "Order Accepted!", 
+                description: `Pickup time: ${pickupTime}. Email configured in simulation mode.`
             });
         }
-
-    } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `orders/${orderId}`,
-            operation: 'update',
-        }));
+    } else if (status === "Rejected") {
+        toast({
+            variant: "destructive",
+            title: "Order Rejected",
+            description: `Notification for ${customerEmail} simulated.`,
+        });
     }
   };
   
@@ -491,16 +462,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   
   const deleteUser = (userId: string) => {
     const userRef = doc(firestore, 'users', userId);
-    // Also try to delete admin role if it exists.
-    const adminRoleRef = doc(firestore, 'roles_admin', userId);
     
-    const batch = writeBatch(firestore);
-    batch.delete(userRef);
-    batch.delete(adminRoleRef); // It's safe to delete a doc that doesn't exist
-
-    batch.commit().catch((error) => {
+    // With email-based admin, we no longer need to manage the roles_admin collection here.
+    deleteDoc(userRef).catch((error) => {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `users/${userId} and/or roles_admin/${userId}`,
+            path: `users/${userId}`,
             operation: 'delete'
         }));
     });

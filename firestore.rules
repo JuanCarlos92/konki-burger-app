@@ -72,8 +72,10 @@ service cloud.firestore {
       match /orders/{orderId} {
         /**
          * @description Enforces user-ownership for accessing their own order documents.
+         *              Also allows admins to update orders (e.g., change status).
          */
-        allow get, update, delete: if isSignedIn() && isOwner(userId);
+        allow get, delete: if isSignedIn() && isOwner(userId);
+        allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
         /**
          * @description Allow user to create an order for themselves.
          */
@@ -92,11 +94,12 @@ service cloud.firestore {
     /**
      * @description Allows admin users to manage all orders, and authenticated users to create their own.
      * @path /orders/{orderId}
-     * @allow (get, list, update, delete) Admin users can perform any operation on orders.
+     * @allow (get, list, delete) Admin users can perform any operation on orders.
      * @allow (create) Authenticated users can create new orders if the order's userId matches their own.
      */
     match /orders/{orderId} {
-      allow get, list, update, delete: if isSignedIn() && isAdmin();
+      allow get, list, delete: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && isAdmin();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
 
       /**

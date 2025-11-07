@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { doc } from "firebase/firestore";
 import { Loader } from "lucide-react";
+import { useAppContext } from "@/lib/contexts/AppContext";
 
 export default function AdminLayout({
   children,
@@ -16,18 +17,11 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { user, isUserLoading } = useUser();
+  const { isAdmin, isUserLoading: isAppLoading } = useAppContext();
   const router = useRouter();
-  const firestore = useFirestore();
-
-  const adminRoleRef = useMemoFirebase(() => {
-    if (!user) return null;
-    return doc(firestore, 'roles_admin', user.uid);
-  }, [user, firestore]);
-
-  const { data: adminRoleDoc, isLoading: isAdminRoleLoading } = useDoc(adminRoleRef);
   
   // This combines all loading states into one.
-  const isLoading = isUserLoading || isAdminRoleLoading;
+  const isLoading = isUserLoading || isAppLoading;
 
   useEffect(() => {
     // If still loading, do nothing. Let the loading UI render.
@@ -54,7 +48,7 @@ export default function AdminLayout({
   }
 
   // 2. If loading is complete, and the user is an admin, render the layout.
-  if (user && adminRoleDoc) {
+  if (user && isAdmin) {
     return (
         <AdminSidebar>
           {children}
@@ -63,7 +57,7 @@ export default function AdminLayout({
   }
 
   // 3. If loading is complete, but user is not an admin or not logged in, show Access Denied.
-  // This covers the case where `user` is null or `adminRoleDoc` is null after loading.
+  // This covers the case where `user` is null or `isAdmin` is false after loading.
   return (
       <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
           <h1 className="text-3xl font-bold font-headline mb-4">Access Denied</h1>

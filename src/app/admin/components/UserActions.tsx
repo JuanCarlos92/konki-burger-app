@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -15,21 +16,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAppContext } from "@/lib/contexts/AppContext";
-import { useDoc, useFirestore, useMemoFirebase } from "@/firebase";
-import { doc } from "firebase/firestore";
 
 export function UserActions({ user }: { user: User }) {
   const { toast } = useToast();
   const { deleteUser } = useAppContext();
-  const firestore = useFirestore();
-
-  // Check if the user being acted on has an admin role
-  const adminRoleRef = useMemoFirebase(() => doc(firestore, 'roles_admin', user.id), [firestore, user.id]);
-  const { data: adminRoleDoc, isLoading: isAdminRoleLoading } = useDoc(adminRoleRef);
+  
+  // Admin status is now based on email, so we can check directly.
+  const isUserAdmin = user.email === 'konkiburger@gmail.com';
 
   const handleDelete = () => {
-    if (adminRoleDoc) {
-      toast({ variant: "destructive", title: "Action Forbidden", description: "Cannot delete an admin account." });
+    if (isUserAdmin) {
+      toast({ variant: "destructive", title: "Action Forbidden", description: "Cannot delete the primary admin account." });
       return;
     }
     deleteUser(user.id);
@@ -48,7 +45,7 @@ export function UserActions({ user }: { user: User }) {
       </Button>
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button size="sm" variant="destructive" disabled={isAdminRoleLoading || !!adminRoleDoc}>
+          <Button size="sm" variant="destructive" disabled={isUserAdmin}>
             Delete
           </Button>
         </AlertDialogTrigger>

@@ -9,7 +9,6 @@
  * - /users/{userId}/cart/{productId}: User's shopping cart items.
  * - /orders/{orderId}: Order information, accessible only to admins.
  * - /orders/{orderId}/orderItems/{orderItemId}: Items within an order, accessible only to admins.
- * - /roles_admin/{userId}: Indicates admin privileges; existence grants admin access.
  * - /users/{userId}/orders/{orderId}: Orders created by a user; access restricted to the user.
  * - /users/{userId}/orders/{orderId}/orderItems/{orderItemId}: Items within an order for a user; access restricted to the user.
  * @keySecurityDecisions
@@ -18,8 +17,7 @@
  * - Data types are not strictly validated during this prototyping phase,
  *   but authorization-critical fields are checked for consistency.
  * @denormalizationForAuthorization
- * - Admin status is determined by the existence of a document in the /roles_admin/{userId} collection,
- *   avoiding the need for complex role lookups.
+ * - Admin status is determined by the authenticated user's email address.
  */
 rules_version = '2';
 service cloud.firestore {
@@ -72,8 +70,10 @@ service cloud.firestore {
       match /orders/{orderId} {
         /**
          * @description Enforces user-ownership for accessing their own order documents.
+         *              Also allows admins to update orders (e.g., change status).
          */
-        allow get, update, delete: if isSignedIn() && isOwner(userId);
+        allow get, delete: if isSignedIn() && isOwner(userId);
+        allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
         /**
          * @description Allow user to create an order for themselves.
          */
@@ -92,36 +92,27 @@ service cloud.firestore {
     /**
      * @description Allows admin users to manage all orders, and authenticated users to create their own.
      * @path /orders/{orderId}
-     * @allow (get, list, update, delete) Admin users can perform any operation on orders.
+     * @allow (get, list, delete) Admin users can perform any operation on orders.
      * @allow (create) Authenticated users can create new orders if the order's userId matches their own.
      */
     match /orders/{orderId} {
-      allow get, list, update, delete: if isSignedIn() && isAdmin();
+      allow get, list, delete: if isSignedIn() && isAdmin();
+      allow update: if isSignedIn() && isAdmin();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-    }
 
-    /**
-     * @description Allows admin users to manage order items.
-     * @path /orders/{orderId}/orderItems/{orderItemId}
-     * @allow (get, list, create, update, delete) Admin users can perform any operation on order items.
-     * @deny Non-admin users cannot access this data.
-     */
-    match /orders/{orderId}/orderItems/{orderItemId} {
-      allow read, write: if isSignedIn() && isAdmin();
+      /**
+       * @description Allows admin users to manage order items.
+       * @path /orders/{orderId}/orderItems/{orderItemId}
+       * @allow (get, list, create, update, delete) Admin users can perform any operation on order items.
+       * @deny Non-admin users cannot access this data.
+       */
+      match /orderItems/{orderItemId} {
+        allow read, write: if isSignedIn() && isAdmin();
+      }
     }
-
-    /**
-     * @description Allows a user to create their own admin role document, and admins to manage all roles.
-     * @path /roles_admin/{userId}
-     * @allow get: Any signed-in user can check for an admin document.
-     * @allow create: if request.auth.uid == userId;
-     * @allow (list, update, delete): if isSignedIn() && isAdmin();
-    */
-     match /roles_admin/{userId} {
-        allow get: if isSignedIn();
-        allow create: if request.auth.uid == userId;
-        allow list, update, delete: if isSignedIn() && isAdmin();
-    }
+    
+    // The roles_admin collection is no longer needed with email-based admin checks.
+    // match /roles_admin/{userId} ...
 
     // ---- Helper functions -----
     function isSignedIn() {
@@ -137,7 +128,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return isSignedIn() && request.auth.token.email == 'konkiburger@gmail.com';
     }
   }
 }
