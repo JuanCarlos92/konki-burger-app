@@ -1,0 +1,143 @@
+
+/**
+ * @description This ruleset enforces a strict user-ownership model for user data,
+ * and restricts order access to authenticated administrators. Public read access is granted for categories and products.
+ * @dataStructure
+ * - /categories/{categoryId}: Publicly readable product categories.
+ * - /products/{productId}: Publicly readable product information.
+ * - /users/{userId}: User profiles, accessible only to the user themselves.
+ * - /users/{userId}/cart/{productId}: User's shopping cart items.
+ * - /orders/{orderId}: Order information, accessible only to admins.
+ * - /orders/{orderId}/orderItems/{orderItemId}: Items within an order, accessible only to admins.
+ * - /roles_admin/{userId}: Indicates admin privileges; existence grants admin access.
+ * - /users/{userId}/orders/{orderId}: Orders created by a user; access restricted to the user.
+ * - /users/{userId}/orders/{orderId}/orderItems/{orderItemId}: Items within an order for a user; access restricted to the user.
+ * @keySecurityDecisions
+ * - User listing is disallowed for non-admins.
+ * - All write operations require a verified, signed-in user.
+ * - Data types are not strictly validated during this prototyping phase,
+ *   but authorization-critical fields are checked for consistency.
+ * @denormalizationForAuthorization
+ * - Admin status is determined by the existence of a document in the /roles_admin/{userId} collection,
+ *   avoiding the need for complex role lookups.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows anyone to read categories, but restricts creation, updates, and deletions to admins.
+     * @path /categories/{categoryId}
+     * @allow (get, list) Any user (authenticated or not) can read category information.
+     * @allow (create, update, delete) Only admin users can manage categories.
+     */
+    match /categories/{categoryId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Allows anyone to read products, but restricts creation, updates, and deletions to admins.
+     * @path /products/{productId}
+     * @allow (get, list) Any user (authenticated or not) can read product information.
+     * @allow (create, update, delete) Only admin users can manage products.
+     */
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create, update, delete: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Enforces user-ownership for profiles, orders, and shopping carts.
+     * @path /users/{userId}
+     */
+    match /users/{userId} {
+      // User can manage their own profile. Admins can list/delete users.
+      allow get, update, create: if isSignedIn() && isOwner(userId);
+      allow list: if isSignedIn() && isAdmin();
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+
+      /**
+       * @description User's shopping cart. Only the user can read or write their own cart items.
+       * @path /users/{userId}/cart/{productId}
+       */
+      match /cart/{productId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+      
+      /**
+       * @description Defines rules for a user's private orders collection.
+       * @path /users/{userId}/orders
+       */
+      match /orders/{orderId} {
+        /**
+         * @description Enforces user-ownership for accessing their own order documents.
+         */
+        allow get, update, delete: if isSignedIn() && isOwner(userId);
+        /**
+         * @description Allow user to create an order for themselves.
+         */
+        allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == request.auth.uid;
+        
+        /**
+          * @description Enforces user-ownership; only the user can read or write their own order items.
+          * @path /users/{userId}/orders/{orderId}/orderItems/{orderItemId}
+          */
+        match /orderItems/{orderItemId} {
+          allow read, write: if isSignedIn() && isOwner(userId);
+        }
+      }
+    }
+
+    /**
+     * @description Allows admin users to manage all orders, and authenticated users to create their own.
+     * @path /orders/{orderId}
+     * @allow (get, list, update, delete) Admin users can perform any operation on orders.
+     * @allow (create) Authenticated users can create new orders if the order's userId matches their own.
+     */
+    match /orders/{orderId} {
+      allow get, list, update, delete: if isSignedIn() && isAdmin();
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+    }
+
+    /**
+     * @description Allows admin users to manage order items.
+     * @path /orders/{orderId}/orderItems/{orderItemId}
+     * @allow (get, list, create, update, delete) Admin users can perform any operation on order items.
+     * @deny Non-admin users cannot access this data.
+     */
+    match /orders/{orderId}/orderItems/{orderItemId} {
+      allow read, write: if isSignedIn() && isAdmin();
+    }
+
+    /**
+     * @description Allows a user to create their own admin role document, and admins to manage all roles.
+     * @path /roles_admin/{userId}
+     * @allow get: Any signed-in user can check for an admin document.
+     * @allow create: if request.auth.uid == userId;
+     * @allow (list, update, delete): if isSignedIn() && isAdmin();
+    */
+     match /roles_admin/{userId} {
+        allow get: if isSignedIn();
+        allow create: if request.auth.uid == userId;
+        allow list, update, delete: if isSignedIn() && isAdmin();
+    }
+
+    // ---- Helper functions -----
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+  }
+}

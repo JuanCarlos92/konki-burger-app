@@ -1,0 +1,349 @@
+{
+  "entities": {
+    "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a product category in the Konki Burger app.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the category."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the category (e.g., 'Burgers', 'Sides', 'Drinks')."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the category."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the image representing the category.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "imageUrl"
+      ]
+    },
+    "Product": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Product",
+      "type": "object",
+      "description": "Represents a product available for purchase in the Konki Burger app.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the product."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Reference to Category. (Relationship: Category 1:N Product)"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the product (e.g., 'Konki Burger', 'Fries')."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the product."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the image representing the product.",
+          "format": "uri"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price of the product.",
+          "format": "number"
+        },
+        "isAvailable": {
+          "type": "boolean",
+          "description": "Indicates whether the product is currently available for sale."
+        }
+      },
+      "required": [
+        "id",
+        "categoryId",
+        "name",
+        "description",
+        "imageUrl",
+        "price",
+        "isAvailable"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Konki Burger app.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user."
+        },
+        "address": {
+          "type": "string",
+          "description": "Address of the user."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "firstName",
+        "lastName",
+        "address"
+      ]
+    },
+    "Order": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Order",
+      "type": "object",
+      "description": "Represents an order placed by a user.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Order)"
+        },
+        "orderDate": {
+          "type": "string",
+          "description": "Date and time when the order was placed.",
+          "format": "date-time"
+        },
+        "totalAmount": {
+          "type": "number",
+          "description": "Total amount of the order."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the order (e.g., 'Pending', 'Accepted', 'Rejected', 'Completed')."
+        },
+        "pickupTime": {
+          "type": "string",
+          "description": "The assigned pickup time when the order is accepted. Null if the order is not accepted, rejected, or completed",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "orderDate",
+        "totalAmount",
+        "status"
+      ]
+    },
+    "OrderItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "OrderItem",
+      "type": "object",
+      "description": "Represents an item within an order.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the order item."
+        },
+        "orderId": {
+          "type": "string",
+          "description": "Reference to Order. (Relationship: Order 1:N OrderItem)"
+        },
+        "productId": {
+          "type": "string",
+          "description": "Reference to Product. (Relationship: Product 1:N OrderItem)"
+        },
+        "quantity": {
+          "type": "number",
+          "description": "Quantity of the product in the order item."
+        },
+        "itemPrice": {
+          "type": "number",
+          "description": "Price of the item"
+        }
+      },
+      "required": [
+        "id",
+        "orderId",
+        "productId",
+        "quantity",
+        "itemPrice"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": {
+            "$ref": "#/backend/entities/Category"
+          },
+          "description": "Stores product categories. Accessible for listing by all users.",
+          "params": [
+            {
+              "name": "categoryId",
+              "description": "Unique identifier for the category."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/products/{productId}",
+        "definition": {
+          "entityName": "Product",
+          "schema": {
+            "$ref": "#/backend/entities/Product"
+          },
+          "description": "Stores product information. Accessible for listing by all users.",
+          "params": [
+            {
+              "name": "productId",
+              "description": "Unique identifier for the product."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information. Access restricted to the user themselves.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "Stores order information. Accessible only to admins.",
+          "params": [
+            {
+              "name": "orderId",
+              "description": "Unique identifier for the order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/orders/{orderId}/orderItems/{orderItemId}",
+        "definition": {
+          "entityName": "OrderItem",
+          "schema": {
+            "$ref": "#/backend/entities/OrderItem"
+          },
+          "description": "Stores items within an order. Accessible only to admins.",
+          "params": [
+            {
+              "name": "orderId",
+              "description": "Unique identifier for the order."
+            },
+            {
+              "name": "orderItemId",
+              "description": "Unique identifier for the order item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Marks a user as an admin. Existence in this collection grants admin privileges.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the admin user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/orders/{orderId}",
+        "definition": {
+          "entityName": "Order",
+          "schema": {
+            "$ref": "#/backend/entities/Order"
+          },
+          "description": "Stores order information for specific user. Access restricted to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "orderId",
+              "description": "Unique identifier for the order."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/orders/{orderId}/orderItems/{orderItemId}",
+        "definition": {
+          "entityName": "OrderItem",
+          "schema": {
+            "$ref": "#/backend/entities/OrderItem"
+          },
+          "description": "Stores items within an order for a specific user. Access restricted to the user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier for the user."
+            },
+            {
+              "name": "orderId",
+              "description": "Unique identifier for the order."
+            },
+            {
+              "name": "orderItemId",
+              "description": "Unique identifier for the order item."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support the Konki Burger app's features, including user authentication (optional), product browsing, shopping cart, order checkout, admin product management, admin user management, and order flow management. The structure prioritizes authorization independence and clarity of intent, adhering to the specified design principles.\n\n**Authorization Independence (CRITICAL):**\n*   The structure avoids hierarchical authorization dependencies (`get()`). Roles and memberships are stored directly within the documents or in dedicated collections, ensuring atomic operations (transactions/batches) are not broken and debugging is simplified.\n\n**Structural Segregation (Homogeneous Security Posture):**\n*   Collections are designed so that all documents within them share the same security requirements. Data with different access needs is separated into different collections. For example:\n    *   `/categories`: Categories are considered public and accessible for listing to all users, enabling QAPs.\n    *   `/products`: Products are public accessible for listing to all users, enabling QAPs.\n    *   `/users/{userId}`: User profiles are private, accessible only to the user themselves.\n    *   `/orders`: Orders are protected and access is granted to admins.\n    *   `/users/{userId}/orders`: Orders created by a user.\n\n**Access Modeling (Standardization and Consistency):**\n*   **Private Data:**  User profiles are stored under `/users/{userId}`, following path-based ownership.\n*   **Collaborative Data:** While not directly collaborative, the admin functionality can be considered as such. Admin roles are managed via existence in the `/roles_admin/{uid}` collection.\n*   **Hierarchical Paths for User-Owned Data:** Orders that are created by a user are created under the path `/users/{userId}/orders/{orderId}`\n\n**QAPs Support:**\n*   The segregation of public data (categories, products) into dedicated collections allows for secure `list` operations without complex filtering in rules.  Admin access is controlled through the `/roles_admin` collection, allowing secure listing of orders.\n\n**Invariants:**\n*   Timestamps (`orderDate`) can be enforced in rules to maintain data integrity.\n*   The `userId` within the `Order` document can be validated against `request.auth.uid` to ensure correct ownership."
+  }
+}

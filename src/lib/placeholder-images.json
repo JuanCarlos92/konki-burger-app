@@ -1,0 +1,64 @@
+{
+  "placeholderImages": [
+    {
+      "id": "classic-burger",
+      "description": "A classic beef burger with lettuce, tomato, and cheese.",
+      "imageUrl": "https://images.unsplash.com/photo-1595263431750-b57c02c30102?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxjbGFzc2ljJTIwYnVyZ2VyfGVufDB8fHx8MTc2MTg0OTk0N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "classic burger"
+    },
+    {
+      "id": "bacon-cheeseburger",
+      "description": "A juicy burger topped with crispy bacon and melted cheddar cheese.",
+      "imageUrl": "https://images.unsplash.com/photo-1724352476668-6cbd99da2d6b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxiYWNvbiUyMGNoZWVzZWJ1cmdlcnxlbnwwfHx8fDE3NjE4NzMzODZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "bacon cheeseburger"
+    },
+    {
+      "id": "veggie-burger",
+      "description": "A delicious plant-based patty with fresh vegetables.",
+      "imageUrl": "https://images.unsplash.com/photo-1542554762515-82be5d8f0bfa?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHx2ZWdnaWUlMjBidXJnZXJ8ZW58MHx8fHwxNzYxODk0NDg3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "veggie burger"
+    },
+    {
+      "id": "chicken-sandwich",
+      "description": "Crispy fried chicken sandwich with pickles and mayo.",
+      "imageUrl": "https://images.unsplash.com/photo-1613985216255-a26ecf1df4a2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjaGlja2VuJTIwc2FuZHdpY2h8ZW58MHx8fHwxNzYxODQzODI4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "chicken sandwich"
+    },
+    {
+      "id": "french-fries",
+      "description": "Golden crispy french fries, lightly salted.",
+      "imageUrl": "https://images.unsplash.com/photo-1585109649139-366815a0d713?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxmcmVuY2glMjBmcmllc3xlbnwwfHx8fDE3NjE5MTIyMzh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "french fries"
+    },
+    {
+      "id": "onion-rings",
+      "description": "Battered and fried onion rings.",
+      "imageUrl": "https://images.unsplash.com/photo-1548077447-17749375af3a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxvbmlvbiUyMHJpbmdzfGVufDB8fHx8MTc2MTg2NDIwNXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "onion rings"
+    },
+    {
+      "id": "soda",
+      "description": "A refreshing cup of soda.",
+      "imageUrl": "https://images.unsplash.com/photo-1746303467526-0176c2ee48cd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxzb2RhJTIwY3VwfGVufDB8fHx8MTc2MTkxNjU1MXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "soda cup"
+    },
+    {
+      "id": "milkshake",
+      "description": "A thick and creamy vanilla milkshake.",
+      "imageUrl": "https://images.unsplash.com/photo-1447195047884-0f014b0d9288?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx2YW5pbGxhJTIwbWlsa3NoYWtlfGVufDB8fHx8MTc2MTg3MzM4Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "vanilla milkshake"
+    },
+    {
+      "id": "double-decker",
+      "description": "A massive burger with two beef patties and extra cheese.",
+      "imageUrl": "https://images.unsplash.com/photo-1651430238759-e34322e4a742?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxkb3VibGUlMjBidXJnZXJ8ZW58MHx8fHwxNzYxODQwNjkwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "double burger"
+    },
+    {
+      "id": "spicy-burger",
+      "description": "A fiery burger with jalapeños and spicy sauce.",
+      "imageUrl": "https://images.unsplash.com/photo-1621378580694-07ed748ce085?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzcGljeSUyMGJ1cmdlcnxlbnwwfHx8fDE3NjE4NzMzODZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "spicy burger"
+    }
+  ]
+}
