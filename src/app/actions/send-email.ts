@@ -22,11 +22,12 @@ export async function sendConfirmationEmailAction(order: Order) {
       items: order.items,
     });
 
-    // Podrías devolver un estado de éxito aquí si fuera necesario.
+    // Si sendOrderConfirmationEmail se ejecuta sin errores, devolvemos éxito.
     return { success: true, message: "Proceso de envío de correo iniciado." };
   } catch (error) {
     console.error("Error en sendConfirmationEmailAction:", error);
     // En una aplicación real, querrías registrar esto en un servicio de monitoreo adecuado.
+    // Ahora, si sendOrderConfirmationEmail lanza un error, se capturará aquí y se devolverá 'success: false'.
     return { success: false, message: "No se pudo iniciar el proceso de envío de correo." };
   }
 }

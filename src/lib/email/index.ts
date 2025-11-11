@@ -56,11 +56,14 @@ export async function sendOrderConfirmationEmail(payload: ConfirmationEmailPaylo
       await sgMail.send(msg);
       console.log(`Correo real enviado a ${payload.to} a través de SendGrid.`);
     } catch (error: any) {
-      console.error('Error al enviar correo con SendGrid:', error);
+      console.error('Error al enviar correo con SendGrid. Este es el error completo:');
       // Este es el registro de diagnóstico que he añadido.
       if (error.response) {
-        console.error('Cuerpo del error de SendGrid:', error.response.body);
+        console.error('Cuerpo del error de SendGrid:', JSON.stringify(error.response.body, null, 2));
+      } else {
+        console.error(error);
       }
+      // CRÍTICO: Volver a lanzar el error para que la Server Action sepa que algo falló.
       throw error;
     }
 
@@ -85,6 +88,4 @@ export async function sendOrderConfirmationEmail(payload: ConfirmationEmailPaylo
     console.log("✅ SIMULACIÓN COMPLETA ✅");
     console.log("====================================");
   }
-
-  return Promise.resolve();
 }
