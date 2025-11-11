@@ -19,6 +19,14 @@ interface ConfirmationEmailPayload {
  */
 export async function sendOrderConfirmationEmail(payload: ConfirmationEmailPayload): Promise<void> {
 
+  console.log('--- DIAGNÓSTICO DE ENVÍO DE CORREO ---');
+  if (process.env.SENDGRID_API_KEY) {
+    console.log('Clave de API de SendGrid ENCONTRADA. Intentando enviar correo real.');
+  } else {
+    console.log('Clave de API de SendGrid NO ENCONTRADA. Se procederá con la simulación.');
+  }
+  console.log('------------------------------------');
+
   // La clave de API se debe guardar de forma segura como una variable de entorno/secreto,
   // NUNCA directamente en el código. El sistema la leerá automáticamente desde `process.env`.
   if (process.env.SENDGRID_API_KEY) {
