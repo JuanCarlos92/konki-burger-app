@@ -96,9 +96,10 @@ service cloud.firestore {
      * @allow (create) Authenticated users can create new orders if the order's userId matches their own.
      */
     match /orders/{orderId} {
-      allow get, list, delete: if isSignedIn() && isAdmin();
-      allow update: if isSignedIn() && isAdmin();
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow get, list, delete, update: if isSignedIn() && isAdmin();
+      // Consolidated create rule: Allow if signed in user matches OR if it's a guest order.
+      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid) || 
+                       (request.auth == null && request.resource.data.userId == 'guest');
 
       /**
        * @description Allows admin users to manage order items.

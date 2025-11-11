@@ -47,9 +47,12 @@ export async function sendOrderConfirmationEmail(payload: ConfirmationEmailPaylo
     try {
       await sgMail.send(msg);
       console.log(`Correo real enviado a ${payload.to} a través de SendGrid.`);
-    } catch (error) {
-      console.error('Error enviando correo con SendGrid:', error);
-      // Es importante manejar errores, quizás relanzar el error o registrarlo en un servicio de monitoreo.
+    } catch (error: any) {
+      console.error('Error al enviar correo con SendGrid:', error);
+      // Este es el registro de diagnóstico que he añadido.
+      if (error.response) {
+        console.error('Cuerpo del error de SendGrid:', error.response.body);
+      }
       throw error;
     }
 

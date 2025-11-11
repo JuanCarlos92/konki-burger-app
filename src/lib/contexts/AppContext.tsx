@@ -338,17 +338,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const cartCount = useMemo(() => cart.reduce((count, item) => count + item.quantity, 0), [cart]);
 
   const addOrder = (orderData: Omit<Order, 'id' | 'createdAt' | 'status'| 'total' | 'items' | 'userId'>) => {
-    if (!firebaseUser) {
-        toast({ variant: 'destructive', title: 'You must be logged in to place an order.'});
-        return;
-    }
-
-    const batch = writeBatch(firestore);
-    const publicOrderRef = doc(collection(firestore, 'orders'));
-    const userOrderRef = doc(firestore, `users/${firebaseUser.uid}/orders`, publicOrderRef.id);
-
-    const newOrderData: Omit<Order, 'id'> = {
-      userId: firebaseUser.uid,
+    const commonOrderData: Omit<Order, 'id' | 'userId'> = {
       createdAt: serverTimestamp() as any,
       status: 'Pending',
       items: cart.map(item => ({
@@ -361,16 +351,44 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       ...orderData
     };
     
-    batch.set(publicOrderRef, newOrderData);
-    batch.set(userOrderRef, newOrderData);
-    
-    batch.commit().catch((error) => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: `orders/${publicOrderRef.id} and users/${firebaseUser.uid}/orders/${userOrderRef.id}`,
+    if (firebaseUser) {
+      // Logged-in user flow
+      const batch = writeBatch(firestore);
+      const publicOrderRef = doc(collection(firestore, 'orders'));
+      const userOrderRef = doc(firestore, `users/${firebaseUser.uid}/orders`, publicOrderRef.id);
+
+      const newOrderData: Omit<Order, 'id'> = {
+        ...commonOrderData,
+        userId: firebaseUser.uid,
+      };
+      
+      batch.set(publicOrderRef, newOrderData);
+      batch.set(userOrderRef, newOrderData);
+      
+      batch.commit().catch((error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `orders/${publicOrderRef.id} (and user order)`,
+            operation: 'create',
+            requestResourceData: newOrderData
+        }));
+      });
+
+    } else {
+      // Guest user flow
+      const publicOrderRef = collection(firestore, 'orders');
+      const newOrderData: Omit<Order, 'id'> = {
+        ...commonOrderData,
+        userId: 'guest', // Identify order as from a guest
+      };
+      
+      addDoc(publicOrderRef, newOrderData).catch((error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+          path: 'orders',
           operation: 'create',
           requestResourceData: newOrderData
-      }));
-    });
+        }));
+      });
+    }
   };
 
   const updateOrderStatus = async (orderId: string, status: Order['status'], customerEmail: string, pickupTime?: string) => {
@@ -378,6 +396,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     
     const orderSnap = await getDoc(publicOrderRef);
     if (!orderSnap.exists()) {
+        toast({ variant: "destructive", title: "Error", description: "Order not found." });
         throw new Error("Order not found");
     }
     const orderData = orderSnap.data() as Order;
@@ -390,40 +409,53 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         updateData.pickupTime = pickupTime;
     }
     
-    // Update public order
     batch.update(publicOrderRef, updateData);
 
-    // Update user-specific order
-    const userOrderRef = doc(firestore, `users/${userId}/orders`, orderId);
-    batch.update(userOrderRef, updateData);
+    // If the order belongs to a registered user, update their private copy too.
+    if (userId && userId !== 'guest') {
+        const userOrderRef = doc(firestore, `users/${userId}/orders`, orderId);
+        batch.update(userOrderRef, updateData);
+    }
 
-    await batch.commit();
+    try {
+      await batch.commit();
 
-    const fullOrderDetails: Order = {
-      ...orderData,
-      ...updateData,
-      id: orderId,
-      createdAt: orderData.createdAt, // ensure timestamp is preserved
-    };
+      const fullOrderDetails: Order = {
+        ...orderData,
+        ...updateData,
+        id: orderId,
+        createdAt: orderData.createdAt, // ensure timestamp is preserved
+      };
 
-    if (status === "Accepted") {
-        const emailResult = await sendConfirmationEmailAction(fullOrderDetails);
-        if (emailResult && emailResult.success) {
-             toast({ 
-                title: "Order Accepted!", 
-                description: `Pickup time: ${pickupTime}. Email process initiated.`
-            });
-        } else {
-             toast({ 
-                title: "Order Accepted!", 
-                description: `Pickup time: ${pickupTime}. Email configured in simulation mode.`
-            });
-        }
-    } else if (status === "Rejected") {
+      if (status === "Accepted") {
+          const emailResult = await sendConfirmationEmailAction(fullOrderDetails);
+          if (emailResult && emailResult.success) {
+               toast({ 
+                  title: "Order Accepted!", 
+                  description: `Pickup time: ${pickupTime}. Email process initiated.`
+              });
+          } else {
+               toast({ 
+                  title: "Order Accepted!", 
+                  description: `Pickup time: ${pickupTime}. Email configured in simulation mode.`
+              });
+          }
+      } else if (status === "Rejected") {
+          toast({
+              variant: "destructive",
+              title: "Order Rejected",
+              description: `Notification for ${customerEmail} simulated.`,
+          });
+      }
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `orders/${orderId}`,
+            operation: 'update',
+        }));
         toast({
-            variant: "destructive",
-            title: "Order Rejected",
-            description: `Notification for ${customerEmail} simulated.`,
+          variant: "destructive",
+          title: "Update Failed",
+          description: "Could not update the order. Check permissions.",
         });
     }
   };
@@ -505,3 +537,5 @@ export const useAppContext = () => {
   }
   return context;
 };
+
+    
