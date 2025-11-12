@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useMemo, useEffect, useCallback } from 'react';
@@ -452,6 +453,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           });
       }
     } catch (error) {
+        console.error("Could not update order status. This might be due to a browser extension (ad-blocker) or a network issue.", error);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `orders/${orderId}`,
             operation: 'update',
@@ -459,7 +461,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         toast({
           variant: "destructive",
           title: "Update Failed",
-          description: "Could not update the order. Check permissions.",
+          description: "Could not update the order. Check permissions or browser extensions.",
         });
     }
   };
@@ -541,5 +543,7 @@ export const useAppContext = () => {
   }
   return context;
 };
+
+    
 
     
