@@ -29,54 +29,72 @@ import { useToast } from "@/hooks/use-toast";
 import { useAppContext } from "@/lib/contexts/AppContext";
 import { errorEmitter } from "@/firebase";
 
+/**
+ * Esquema de validación para el formulario de inicio de sesión.
+ */
 const formSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email." }),
-  password: z.string().min(1, { message: "Password is required." }),
+  email: z.string().email({ message: "Por favor, introduce un email válido." }),
+  password: z.string().min(1, { message: "La contraseña es obligatoria." }),
 });
 
+/**
+ * Página de inicio de sesión.
+ */
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAppContext();
   const { toast } = useToast();
 
+  // Configuración del formulario.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { email: "", password: "" },
   });
 
+  /**
+   * Maneja el envío del formulario de inicio de sesión.
+   * @param {object} values - Los valores del formulario.
+   */
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      // Llama a la función de login del contexto.
       await login(values.email, values.password);
       
       toast({
-        title: "Logged In!",
-        description: `Welcome back!`,
+        title: "¡Sesión Iniciada!",
+        description: `¡Bienvenido de nuevo!`,
       });
 
-      // The admin layout will handle redirection for admins.
+      // El layout de admin se encargará de redirigir a los administradores.
+      // Los usuarios normales irán a la página de inicio.
       router.push("/");
 
     } catch (error: any) {
+      // Manejo de errores específicos de Firebase Auth.
       if (error.code === 'auth/invalid-credential') {
         toast({
             variant: "destructive",
-            title: "Invalid Credentials",
-            description: "Please check your email and password and try again.",
+            title: "Credenciales Inválidas",
+            description: "Por favor, comprueba tu email y contraseña e inténtalo de nuevo.",
         });
       } else {
-        const contextualError = new Error(`Login failed: ${error.message}`);
+        // Para otros errores, se emite un error global para depuración.
+        const contextualError = new Error(`El inicio de sesión falló: ${error.message}`);
         errorEmitter.emit('permission-error', contextualError as any);
       }
     }
   };
   
+  /**
+   * Maneja la solicitud de restablecimiento de contraseña.
+   */
   const handlePasswordReset = () => {
     const email = form.getValues("email");
     if (!email) {
       toast({
         variant: "destructive",
-        title: "Email Required",
-        description: "Please enter your email address to reset your password.",
+        title: "Email Requerido",
+        description: "Por favor, introduce tu dirección de email para restablecer tu contraseña.",
       });
       return;
     }
@@ -84,16 +102,19 @@ export default function LoginPage() {
     sendPasswordResetEmail(auth, email)
         .then(() => {
             toast({
-                title: "Password Reset Email Sent",
-                description: `An email has been sent to ${email} with instructions to reset your password.`,
+                title: "Email de Restablecimiento Enviado",
+                description: `Se ha enviado un email a ${email} con instrucciones para restablecer tu contraseña.`,
             });
         })
         .catch((error) => {
-            const contextualError = new Error(`Password reset failed: ${error.message}`);
+            const contextualError = new Error(`El restablecimiento de contraseña falló: ${error.message}`);
             errorEmitter.emit('permission-error', contextualError as any);
         });
   };
 
+  /**
+   * Permite al usuario continuar como invitado, redirigiéndolo a la página de inicio.
+   */
   const handleGuest = () => {
     router.push("/");
   }
@@ -105,8 +126,8 @@ export default function LoginPage() {
             <Link href="/" className="mb-4 inline-block">
                 <Menu className="h-10 w-10 text-primary mx-auto" />
             </Link>
-          <CardTitle className="text-3xl font-headline">Welcome Back</CardTitle>
-          <CardDescription>Enter your credentials to access your account</CardDescription>
+          <CardTitle className="text-3xl font-headline">Bienvenido de Nuevo</CardTitle>
+          <CardDescription>Introduce tus credenciales para acceder a tu cuenta</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -118,7 +139,7 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="m@example.com" {...field} />
+                      <Input type="email" placeholder="m@ejemplo.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -130,14 +151,14 @@ export default function LoginPage() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex justify-between items-center">
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>Contraseña</FormLabel>
                       <Button
                         type="button"
                         variant="link"
                         className="p-0 h-auto text-xs text-primary"
                         onClick={handlePasswordReset}
                       >
-                        Forgot password?
+                        ¿Olvidaste tu contraseña?
                       </Button>
                     </div>
                     <FormControl>
@@ -148,17 +169,17 @@ export default function LoginPage() {
                 )}
               />
               <Button type="submit" className="w-full">
-                Log In
+                Iniciar Sesión
               </Button>
                <Button type="button" variant="secondary" className="w-full" onClick={handleGuest}>
-                Continue as Guest
+                Continuar como Invitado
               </Button>
             </form>
           </Form>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{" "}
+            ¿No tienes una cuenta?{" "}
             <Link href="/register" className="underline text-primary">
-              Sign up
+              Regístrate
             </Link>
           </div>
         </CardContent>

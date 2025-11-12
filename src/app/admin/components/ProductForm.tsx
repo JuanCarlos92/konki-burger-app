@@ -35,26 +35,38 @@ import { useAppContext } from "@/lib/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, Category } from "@/lib/types";
 
+/**
+ * Esquema de validación para el formulario de producto usando Zod.
+ */
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  description: z.string().min(10, { message: "Description must be at least 10 characters." }),
-  price: z.coerce.number().positive({ message: "Price must be a positive number." }),
-  category: z.string({ required_error: "Please select a category." }),
+  name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  description: z.string().min(10, { message: "La descripción debe tener al menos 10 caracteres." }),
+  price: z.coerce.number().positive({ message: "El precio debe ser un número positivo." }),
+  category: z.string({ required_error: "Por favor, selecciona una categoría." }),
 });
 
+/**
+ * Propiedades para el componente ProductForm.
+ */
 interface ProductFormProps {
-  product?: Product;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  categories: Category[];
+  product?: Product; // El producto a editar (opcional). Si no se proporciona, es un formulario de creación.
+  open: boolean; // Controla si el diálogo está abierto.
+  onOpenChange: (open: boolean) => void; // Función para cambiar el estado de apertura del diálogo.
+  categories: Category[]; // Lista de categorías disponibles para el selector.
 }
 
+/**
+ * Un formulario en un diálogo para crear o editar un producto.
+ * @param {ProductFormProps} props - Las propiedades del componente.
+ */
 export function ProductForm({ product, open, onOpenChange, categories }: ProductFormProps) {
   const { addProduct, updateProduct } = useAppContext();
   const { toast } = useToast();
 
+  // Configuración del formulario con react-hook-form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    // Los valores por defecto se basan en el producto proporcionado (para edición) o son vacíos (para creación).
     defaultValues: {
       name: product?.name || "",
       description: product?.description || "",
@@ -63,6 +75,11 @@ export function ProductForm({ product, open, onOpenChange, categories }: Product
     },
   });
 
+  /**
+   * Efecto que resetea el formulario cuando el producto a editar cambia.
+   * Esto asegura que si el usuario cierra el diálogo de edición de un producto y
+   * abre el de otro, el formulario muestre los datos correctos.
+   */
   React.useEffect(() => {
     form.reset({
       name: product?.name || "",
@@ -72,20 +89,27 @@ export function ProductForm({ product, open, onOpenChange, categories }: Product
     });
   }, [product, form]);
 
+  /**
+   * Función que se ejecuta al enviar el formulario.
+   * Distingue entre crear y actualizar un producto.
+   * @param {object} values - Los valores validados del formulario.
+   */
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     if (product) {
-      // Edit existing product
+      // Si hay un producto, se actualiza.
       updateProduct(product.id, values);
-      toast({ title: "Product Updated!" });
+      toast({ title: "¡Producto Actualizado!" });
     } else {
-      // Add new product
+      // Si no hay producto, se crea uno nuevo.
       const newProduct = {
         ...values,
-        image: { src: 'https://picsum.photos/seed/new/600/400', alt: values.name, aiHint: 'new product' }, // Default image
+        // Se asigna una imagen placeholder por defecto.
+        image: { src: 'https://picsum.photos/seed/new/600/400', alt: values.name, aiHint: 'new product' },
       };
       addProduct(newProduct);
-      toast({ title: "Product Added!" });
+      toast({ title: "¡Producto Añadido!" });
     }
+    // Cierra el diálogo después de la operación.
     onOpenChange(false);
   };
 
@@ -93,7 +117,7 @@ export function ProductForm({ product, open, onOpenChange, categories }: Product
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{product ? "Edit Product" : "Add New Product"}</DialogTitle>
+          <DialogTitle>{product ? "Editar Producto" : "Añadir Nuevo Producto"}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
@@ -102,9 +126,9 @@ export function ProductForm({ product, open, onOpenChange, categories }: Product
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Product Name</FormLabel>
+                  <FormLabel>Nombre del Producto</FormLabel>
                   <FormControl>
-                    <Input placeholder="Konki Classic" {...field} />
+                    <Input placeholder="Konki Clásica" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -115,9 +139,9 @@ export function ProductForm({ product, open, onOpenChange, categories }: Product
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Descripción</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="A juicy beef patty..." {...field} />
+                    <Textarea placeholder="Una jugosa hamburguesa de ternera..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -129,7 +153,7 @@ export function ProductForm({ product, open, onOpenChange, categories }: Product
                 name="price"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Price</FormLabel>
+                    <FormLabel>Precio</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" placeholder="9.99" {...field} />
                     </FormControl>
@@ -142,11 +166,11 @@ export function ProductForm({ product, open, onOpenChange, categories }: Product
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Category</FormLabel>
+                    <FormLabel>Categoría</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select a category" />
+                          <SelectValue placeholder="Selecciona una categoría" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -164,9 +188,9 @@ export function ProductForm({ product, open, onOpenChange, categories }: Product
             </div>
             <DialogFooter className="pt-4">
                 <DialogClose asChild>
-                    <Button type="button" variant="secondary">Cancel</Button>
+                    <Button type="button" variant="secondary">Cancelar</Button>
                 </DialogClose>
-                <Button type="submit">Save Changes</Button>
+                <Button type="submit">Guardar Cambios</Button>
             </DialogFooter>
           </form>
         </Form>

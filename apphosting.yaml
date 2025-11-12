@@ -8,9 +8,15 @@ runConfig:
 
   # CONFIGURACIÓN DE VARIABLES DE ENTORNO Y SECRETOS
   env:
-    - variable: SENDGRID_API_KEY
-      # El nombre de la variable de entorno que usarás en tu código (ej: process.env.SENDGRID_API_KEY)
-      secret: SENDGRID_API_KEY
+    - variable: GMAIL_USER
+      # El nombre del usuario de Gmail que se usará para enviar correos.
+      secret: GMAIL_USER
+      # INDICAMOS QUE EL SECRETO DEBE ESTAR DISPONIBLE EN TIEMPO DE EJECUCIÓN
+      availability:
+        - RUNTIME
+    - variable: GMAIL_APP_PASSWORD
+      # La contraseña de aplicación generada para la cuenta de Gmail.
+      secret: GMAIL_APP_PASSWORD
       # INDICAMOS QUE EL SECRETO DEBE ESTAR DISPONIBLE EN TIEMPO DE EJECUCIÓN
       availability:
         - RUNTIME

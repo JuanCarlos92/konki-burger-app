@@ -21,17 +21,28 @@ import { Separator } from "@/components/ui/separator";
 import { useAppContext } from "@/lib/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
 
+/**
+ * Esquema de validación para el formulario de checkout.
+ * Define los campos requeridos y sus validaciones.
+ */
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email." }),
-  address: z.string().min(10, { message: "Address must be at least 10 characters." }),
+  name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  email: z.string().email({ message: "Por favor, introduce un email válido." }),
+  address: z.string().min(10, { message: "La dirección debe tener al menos 10 caracteres." }),
 });
 
+/**
+ * Página de Checkout.
+ * Permite al usuario revisar su pedido y proporcionar sus datos para finalizar la compra.
+ */
 export default function CheckoutPage() {
+  // Hooks para acceder al contexto de la aplicación, al router y a las notificaciones (toasts).
   const { cart, cartTotal, addOrder, clearCart, currentUser } = useAppContext();
   const router = useRouter();
   const { toast } = useToast();
 
+  // Configuración del formulario con react-hook-form y zod para la validación.
+  // Los valores por defecto se rellenan si hay un usuario logueado.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -41,36 +52,48 @@ export default function CheckoutPage() {
     },
   });
 
+  /**
+   * Función que se ejecuta al enviar el formulario.
+   * Procesa el pedido, limpia el carrito y redirige al usuario.
+   * @param values - Los datos del formulario validados.
+   */
   function onSubmit(values: z.infer<typeof formSchema>) {
+    // Llama a la función del contexto para añadir el pedido.
     addOrder({ customer: values });
+    // Limpia el carrito después de realizar el pedido.
     clearCart();
+    // Muestra una notificación de éxito.
     toast({
-      title: "Order Placed! 🚀",
-      description: "Your delicious meal is being prepared. We'll notify you when it's ready!",
+      title: "¡Pedido Realizado! 🚀",
+      description: "Tu deliciosa comida se está preparando. ¡Te avisaremos cuando esté lista!",
     });
+    // Redirige al usuario a la página de inicio.
     router.push("/");
   }
 
+  // Si el carrito está vacío, muestra un mensaje y un botón para volver al menú.
   if (cart.length === 0) {
     return (
         <div className="container py-12 text-center">
-            <h1 className="font-headline text-4xl mb-4">Your Cart is Empty</h1>
-            <p className="text-muted-foreground mb-6">You can't check out with an empty cart. Let's find something tasty!</p>
+            <h1 className="font-headline text-4xl mb-4">Tu Carrito está Vacío</h1>
+            <p className="text-muted-foreground mb-6">No puedes pagar con un carrito vacío. ¡Vamos a encontrar algo sabroso!</p>
             <Button asChild>
-                <a href="/">Back to Menu</a>
+                <a href="/">Volver al Menú</a>
             </Button>
         </div>
     )
   }
 
+  // Renderiza la página de checkout con el formulario y el resumen del pedido.
   return (
     <div className="container py-12">
       <h1 className="text-4xl font-bold font-headline text-center mb-8">Checkout</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        {/* Columna del formulario de datos del cliente */}
         <div>
           <Card>
             <CardHeader>
-              <CardTitle className="font-headline">Your Details</CardTitle>
+              <CardTitle className="font-headline">Tus Datos</CardTitle>
             </CardHeader>
             <CardContent>
               <Form {...form}>
@@ -80,7 +103,7 @@ export default function CheckoutPage() {
                     name="name"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Full Name</FormLabel>
+                        <FormLabel>Nombre Completo</FormLabel>
                         <FormControl>
                           <Input placeholder="John Doe" {...field} />
                         </FormControl>
@@ -95,7 +118,7 @@ export default function CheckoutPage() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="you@example.com" {...field} />
+                          <Input placeholder="tu@ejemplo.com" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -106,16 +129,16 @@ export default function CheckoutPage() {
                     name="address"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Address for Pickup/Delivery</FormLabel>
+                        <FormLabel>Dirección para Recogida/Envío</FormLabel>
                         <FormControl>
-                          <Input placeholder="123 Cosmic Way, Galaxy Town" {...field} />
+                          <Input placeholder="123 Calle Cósmica, Ciudad Galaxia" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                   <Button type="submit" className="w-full mt-6" size="lg" style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
-                    Place Order - ${cartTotal.toFixed(2)}
+                    Realizar Pedido - ${cartTotal.toFixed(2)}
                   </Button>
                 </form>
               </Form>
@@ -123,10 +146,11 @@ export default function CheckoutPage() {
           </Card>
         </div>
 
+        {/* Columna del resumen del pedido */}
         <div>
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline">Order Summary</CardTitle>
+                    <CardTitle className="font-headline">Resumen del Pedido</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {cart.map(item => (
@@ -137,7 +161,7 @@ export default function CheckoutPage() {
                                </div>
                                <div>
                                    <p className="font-semibold">{item.product.name}</p>
-                                   <p className="text-sm text-muted-foreground">Quantity: {item.quantity}</p>
+                                   <p className="text-sm text-muted-foreground">Cantidad: {item.quantity}</p>
                                </div>
                             </div>
                             <p className="font-semibold">${(item.product.price * item.quantity).toFixed(2)}</p>

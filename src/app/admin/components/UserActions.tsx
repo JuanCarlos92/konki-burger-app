@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -17,49 +16,66 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAppContext } from "@/lib/contexts/AppContext";
 
+/**
+ * Componente que renderiza los botones de acción para un usuario (Resetear Contraseña, Eliminar).
+ * @param {object} props - Propiedades del componente.
+ * @param {User} props.user - El objeto del usuario sobre el cual actuar.
+ */
 export function UserActions({ user }: { user: User }) {
   const { toast } = useToast();
   const { deleteUser } = useAppContext();
   
-  // Admin status is now based on email, so we can check directly.
+  // El estado de administrador ahora se basa en el email, por lo que podemos comprobarlo directamente.
+  // Esto evita la eliminación de la cuenta de administrador principal.
   const isUserAdmin = user.email === 'konkiburger@gmail.com';
 
+  /**
+   * Maneja la eliminación de un usuario.
+   * Evita que la cuenta de administrador principal sea eliminada.
+   */
   const handleDelete = () => {
     if (isUserAdmin) {
-      toast({ variant: "destructive", title: "Action Forbidden", description: "Cannot delete the primary admin account." });
+      toast({ variant: "destructive", title: "Acción Prohibida", description: "No se puede eliminar la cuenta de administrador principal." });
       return;
     }
     deleteUser(user.id);
-    toast({ variant: "destructive", title: "User Deleted", description: `${user.name} has been removed from the system.` });
+    toast({ variant: "destructive", title: "Usuario Eliminado", description: `"${user.name}" ha sido eliminado del sistema.` });
   };
   
+  /**
+   * Simula el envío de un correo para restablecer la contraseña.
+   * En una aplicación real, esto activaría un servicio de correo electrónico.
+   */
   const handlePasswordReset = () => {
-    // This is a mock action. In a real app, this would trigger an email.
-    toast({ title: "Password Reset", description: `A password reset link has been sent to ${user.email}. (This is a simulation)` });
+    toast({ title: "Contraseña Restablecida", description: `Se ha enviado un enlace para restablecer la contraseña a ${user.email}. (Esto es una simulación)` });
   };
 
   return (
     <div className="flex gap-2 justify-end">
+      {/* Botón para simular el restablecimiento de contraseña */}
       <Button size="sm" variant="outline" onClick={handlePasswordReset}>
-        Reset Password
+        Restablecer Contraseña
       </Button>
+      
+      {/* Diálogo de confirmación para eliminar el usuario */}
       <AlertDialog>
         <AlertDialogTrigger asChild>
+          {/* El botón de eliminar se deshabilita si el usuario es el administrador principal */}
           <Button size="sm" variant="destructive" disabled={isUserAdmin}>
-            Delete
+            Eliminar
           </Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogTitle>¿Estás absolutamente seguro?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the user account for "{user.name}".
+              Esta acción no se puede deshacer. Esto eliminará permanentemente la cuenta de usuario de "{user.name}".
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Delete
+              Eliminar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

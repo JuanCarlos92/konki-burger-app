@@ -5,35 +5,36 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 /**
- * An invisible component that listens for globally emitted 'permission-error' events.
- * It throws any received error to be caught by Next.js's global-error.tsx.
+ * Un componente invisible que escucha eventos de 'permission-error' emitidos globalmente.
+ * Lanza cualquier error recibido para que sea capturado por el `error.tsx` global de Next.js,
+ * mostrando una superposición de error en desarrollo.
  */
 export function FirebaseErrorListener() {
-  // Use the specific error type for the state for type safety.
+  // Usa el tipo de error específico para el estado para mayor seguridad de tipos.
   const [error, setError] = useState<FirestorePermissionError | null>(null);
 
   useEffect(() => {
-    // The callback now expects a strongly-typed error, matching the event payload.
+    // La función de callback ahora espera un error fuertemente tipado, coincidiendo con el payload del evento.
     const handleError = (error: FirestorePermissionError) => {
-      // Set error in state to trigger a re-render.
+      // Establece el error en el estado para provocar un nuevo renderizado.
       setError(error);
     };
 
-    // The typed emitter will enforce that the callback for 'permission-error'
-    // matches the expected payload type (FirestorePermissionError).
+    // El emisor tipado (`errorEmitter`) asegura que el callback para 'permission-error'
+    // coincida con el tipo de payload esperado (FirestorePermissionError).
     errorEmitter.on('permission-error', handleError);
 
-    // Unsubscribe on unmount to prevent memory leaks.
+    // Se desuscribe en el desmontaje para prevenir fugas de memoria.
     return () => {
       errorEmitter.off('permission-error', handleError);
     };
   }, []);
 
-  // On re-render, if an error exists in state, throw it.
+  // En el nuevo renderizado, si existe un error en el estado, lo lanza.
   if (error) {
     throw error;
   }
 
-  // This component renders nothing.
+  // Este componente no renderiza nada.
   return null;
 }

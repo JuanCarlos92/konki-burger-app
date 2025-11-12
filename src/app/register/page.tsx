@@ -28,35 +28,47 @@ import { useToast } from "@/hooks/use-toast";
 import { useAppContext } from "@/lib/contexts/AppContext";
 import { errorEmitter } from "@/firebase";
 
+/**
+ * Esquema de validación para el formulario de registro.
+ */
 const formSchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email." }),
-  address: z.string().min(10, { message: "Address must be at least 10 characters." }),
-  password: z.string().min(8, { message: "Password must be at least 8 characters." }),
+  name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
+  email: z.string().email({ message: "Por favor, introduce un email válido." }),
+  address: z.string().min(10, { message: "La dirección debe tener al menos 10 caracteres." }),
+  password: z.string().min(8, { message: "La contraseña debe tener al menos 8 caracteres." }),
 });
 
+/**
+ * Página de registro de nuevos usuarios.
+ */
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { register } = useAppContext();
 
+  // Configuración del formulario con react-hook-form y Zod.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { name: "", email: "", address: "", password: "" },
   });
 
+  /**
+   * Maneja el envío del formulario de registro.
+   * @param {object} values - Los valores validados del formulario.
+   */
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     register(values.name, values.email, values.address, values.password)
       .then(() => {
+        // Si el registro es exitoso, muestra una notificación y redirige al inicio.
         toast({
-          title: "Account Created!",
-          description: `Welcome to Konki Burger, ${values.name}!`,
+          title: "¡Cuenta Creada!",
+          description: `¡Bienvenido a Konki Burger, ${values.name}!`,
         });
         router.push("/");
       })
       .catch((error: any) => {
-        // Emit the error to be caught by the global error listener
-        // This will allow us to see the contextual error in the dev overlay.
+        // Si hay un error (ej. el email ya existe), se emite un error global
+        // para que pueda ser capturado y mostrado en la superposición de desarrollo.
         errorEmitter.emit('permission-error', error);
       });
   };
@@ -68,8 +80,8 @@ export default function RegisterPage() {
             <Link href="/" className="mb-4 inline-block">
                 <Menu className="h-10 w-10 text-primary mx-auto" />
             </Link>
-          <CardTitle className="text-3xl font-headline">Create an Account</CardTitle>
-          <CardDescription>Join the Konki Burger family!</CardDescription>
+          <CardTitle className="text-3xl font-headline">Crear una Cuenta</CardTitle>
+          <CardDescription>¡Únete a la familia Konki Burger!</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -79,7 +91,7 @@ export default function RegisterPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Name</FormLabel>
+                    <FormLabel>Nombre</FormLabel>
                     <FormControl>
                       <Input placeholder="John Doe" {...field} />
                     </FormControl>
@@ -94,7 +106,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="m@example.com" {...field} />
+                      <Input type="email" placeholder="m@ejemplo.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -105,9 +117,9 @@ export default function RegisterPage() {
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Address</FormLabel>
+                    <FormLabel>Dirección</FormLabel>
                     <FormControl>
-                      <Input placeholder="123 Cosmic Way" {...field} />
+                      <Input placeholder="123 Calle Cósmica" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -118,7 +130,7 @@ export default function RegisterPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>Contraseña</FormLabel>
                     <FormControl>
                       <Input type="password" placeholder="••••••••" {...field} />
                     </FormControl>
@@ -127,14 +139,14 @@ export default function RegisterPage() {
                 )}
               />
               <Button type="submit" className="w-full">
-                Create Account
+                Crear Cuenta
               </Button>
             </form>
           </Form>
           <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
+            ¿Ya tienes una cuenta?{" "}
             <Link href="/login" className="underline text-primary">
-              Log in
+              Inicia sesión
             </Link>
           </div>
         </CardContent>

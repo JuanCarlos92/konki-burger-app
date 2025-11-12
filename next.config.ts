@@ -1,14 +1,19 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /* Opciones de configuración aquí */
   typescript: {
+    // Ignora los errores de build de TypeScript. Útil durante el desarrollo rápido, 
+    // pero se recomienda activarlo para producción.
     ignoreBuildErrors: true,
   },
   eslint: {
+    // Ignora los errores de ESLint durante el build.
     ignoreDuringBuilds: true,
   },
   images: {
+    // Configura los dominios remotos desde los que se pueden cargar imágenes
+    // a través del componente `next/image`.
     remotePatterns: [
       {
         protocol: 'https',

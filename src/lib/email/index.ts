@@ -1,8 +1,17 @@
-// En una aplicación de producción, usarías un servicio como SendGrid, Mailgun o AWS SES.
-// Instalarías su SDK (p. ej., `npm install @sendgrid/mail`) y lo configurarías con tu clave de API.
-import sgMail from '@sendgrid/mail';
+// En una aplicación de producción, usarías un servicio como Nodemailer, SendGrid, Mailgun o AWS SES.
+// Instalarías su SDK (p. ej., `npm install nodemailer`) y lo configurarías con tus credenciales.
+import nodemailer from 'nodemailer';
 import type { Order } from "../types";
 
+/**
+ * Define la estructura de los datos necesarios para enviar un correo de confirmación.
+ * @property {string} to - La dirección de correo electrónico del destinatario.
+ * @property {string} name - El nombre del destinatario.
+ * @property {string} orderId - El identificador único del pedido.
+ * @property {string} pickupTime - La hora de recogida programada para el pedido.
+ * @property {number} total - El importe total del pedido.
+ * @property {Order["items"]} items - Un array con los artículos del pedido.
+ */
 interface ConfirmationEmailPayload {
   to: string;
   name: string;
@@ -13,34 +22,43 @@ interface ConfirmationEmailPayload {
 }
 
 /**
- * Envía un correo de confirmación de pedido usando SendGrid si la API key está disponible.
- * Si no, simula el envío registrando en la consola.
- * @param payload - Los datos para el correo de confirmación.
+ * Envía un correo de confirmación de pedido usando Nodemailer con Gmail si las credenciales están disponibles.
+ * Si no, simula el envío registrando en la consola para depuración.
+ * @param {ConfirmationEmailPayload} payload - Los datos para el correo de confirmación.
+ * @throws {Error} Lanza un error si el envío con Nodemailer falla.
  */
 export async function sendOrderConfirmationEmail(payload: ConfirmationEmailPayload): Promise<void> {
 
   console.log('--- DIAGNÓSTICO DE ENVÍO DE CORREO ---');
-  if (process.env.SENDGRID_API_KEY) {
-    console.log('Clave de API de SendGrid ENCONTRADA. Intentando enviar correo real.');
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    console.log('Credenciales de Gmail ENCONTRADAS. Intentando enviar correo real.');
   } else {
-    console.log('Clave de API de SendGrid NO ENCONTRADA. Se procederá con la simulación.');
+    console.log('Credenciales de Gmail NO ENCONTRADAS. Se procederá con la simulación.');
   }
   console.log('------------------------------------');
 
-  // La clave de API se debe guardar de forma segura como una variable de entorno/secreto,
-  // NUNCA directamente en el código. El sistema la leerá automáticamente desde `process.env`.
-  if (process.env.SENDGRID_API_KEY) {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  // Las credenciales se deben guardar de forma segura como variables de entorno/secretos,
+  // NUNCA directamente en el código. App Hosting las inyectará en `process.env`.
+  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    // Crea un "transportador" reutilizable con la configuración para Gmail.
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD, // ¡IMPORTANTE! Usa una contraseña de aplicación, no tu contraseña normal.
+      },
+    });
 
+    // Construye el HTML para la lista de artículos del pedido.
     const itemsHtml = payload.items.map(item => 
       `<li>${item.quantity}x ${item.product.name} - $${(item.product.price * item.quantity).toFixed(2)}</li>`
     ).join('');
 
-    // IMPORTANTE: El correo 'from' DEBE ser un correo que hayas verificado en tu cuenta de SendGrid.
-    const msg = {
-      to: payload.to,
-      from: 'konkiburger@gmail.com', // Correo del remitente verificado en SendGrid.
-      subject: `¡Tu pedido #${payload.orderId} de Konki Burger está confirmado!`,
+    // Define las opciones del correo.
+    const mailOptions = {
+      from: `"Konki Burger" <${process.env.GMAIL_USER}>`, // Dirección del remitente (tu cuenta de Gmail)
+      to: payload.to, // Dirección del destinatario
+      subject: `¡Tu pedido #${payload.orderId} de Konki Burger está confirmado!`, // Asunto del correo
       html: `
         <h1>Hola ${payload.name},</h1>
         <p>¡Buenas noticias! Tu pedido ha sido aceptado y estará listo para recoger a las <strong>${payload.pickupTime}</strong>.</p>
@@ -53,24 +71,19 @@ export async function sendOrderConfirmationEmail(payload: ConfirmationEmailPaylo
     };
 
     try {
-      await sgMail.send(msg);
-      console.log(`Correo real enviado a ${payload.to} a través de SendGrid.`);
+      await transporter.sendMail(mailOptions);
+      console.log(`Correo real enviado a ${payload.to} a través de Nodemailer.`);
     } catch (error: any) {
-      console.error('Error al enviar correo con SendGrid. Este es el error completo:');
-      // Este es el registro de diagnóstico que he añadido.
-      if (error.response) {
-        console.error('Cuerpo del error de SendGrid:', JSON.stringify(error.response.body, null, 2));
-      } else {
-        console.error(error);
-      }
+      console.error('Error al enviar correo con Nodemailer. Este es el error completo:');
+      console.error(error);
       // CRÍTICO: Volver a lanzar el error para que la Server Action sepa que algo falló.
-      throw error;
+      throw new Error(`Fallo en el envío con Nodemailer: ${error.message}`);
     }
 
   } else {
-    // --- MODO DE SIMULACIÓN (si no hay clave de API) ---
+    // --- MODO DE SIMULACIÓN (si no hay credenciales) ---
     console.log("====================================");
-    console.log("✉️ SIMULANDO ENVÍO DE CORREO (no se encontró API Key de SendGrid) ✉️");
+    console.log("✉️ SIMULANDO ENVÍO DE CORREO (no se encontraron credenciales de Gmail) ✉️");
     console.log("====================================");
     console.log(`Para: ${payload.to}`);
     console.log(`Asunto: ¡Tu pedido #${payload.orderId} de Konki Burger está confirmado!`);

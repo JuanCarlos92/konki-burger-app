@@ -5,29 +5,43 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+/**
+ * IMPORTANTE: NO MODIFICAR ESTA FUNCIÓN
+ * 
+ * Inicializa la aplicación de Firebase.
+ * Esta función está diseñada para funcionar tanto en un entorno de Firebase App Hosting
+ * (donde la configuración se inyecta automáticamente) como en un entorno de desarrollo local
+ * (donde se usa el objeto `firebaseConfig`).
+ */
 export function initializeFirebase() {
+  // Si ya hay una aplicación inicializada, la reutiliza.
   if (getApps().length > 0) {
     return getSdks(getApp());
   }
 
   let firebaseApp;
   try {
-    // Firebase App Hosting integrates with initializeApp() to provide environment variables.
-    // We first attempt to initialize without a config object.
+    // Firebase App Hosting se integra con initializeApp() para proveer variables de entorno.
+    // Primero intentamos inicializar sin un objeto de configuración.
     firebaseApp = initializeApp();
   } catch (e) {
-    // If automatic initialization fails (e.g., not in a fully configured App Hosting env),
-    // we fall back to using the explicit config object. This is common for local development.
+    // Si la inicialización automática falla (ej. en desarrollo local),
+    // recurrimos a usar el objeto de configuración explícito.
     if (process.env.NODE_ENV === "production") {
-      console.warn('Firebase automatic initialization failed. Falling back to firebaseConfig.', e);
+      console.warn('La inicialización automática de Firebase falló. Usando firebaseConfig como respaldo.', e);
     }
     firebaseApp = initializeApp(firebaseConfig);
   }
 
+  // Devuelve los SDKs de los servicios de Firebase inicializados.
   return getSdks(firebaseApp);
 }
 
+/**
+ * Obtiene los SDKs de los servicios de Firebase a partir de la aplicación inicializada.
+ * @param {FirebaseApp} firebaseApp - La instancia de la aplicación de Firebase.
+ * @returns Un objeto con los servicios de `auth` y `firestore`.
+ */
 export function getSdks(firebaseApp: FirebaseApp) {
   return {
     firebaseApp,
@@ -36,6 +50,7 @@ export function getSdks(firebaseApp: FirebaseApp) {
   };
 }
 
+// Re-exporta todos los módulos para un acceso centralizado.
 export * from './provider';
 export * from './client-provider';
 export * from './firestore/use-collection';

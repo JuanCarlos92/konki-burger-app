@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useMemo } from 'react';
@@ -25,66 +24,82 @@ import { format } from 'date-fns';
 import type { Order } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
+/**
+ * Página de administración para gestionar todos los pedidos.
+ * Muestra una tabla con todos los pedidos de los clientes.
+ */
 export default function AdminOrdersPage() {
   const firestore = useFirestore();
   
-  // Fetch all orders directly in the admin page
+  // Obtiene todos los pedidos de la colección 'orders' en Firestore.
+  // En un entorno de producción, esto debería paginarse.
   const ordersQuery = useMemoFirebase(() => collection(firestore, 'orders'), [firestore]);
   const { data: orders, isLoading: isOrdersLoading } = useCollection<Order>(ordersQuery);
   
+  /**
+   * Memoiza y ordena los pedidos por fecha de creación, de más reciente a más antiguo.
+   */
   const sortedOrders = useMemo(() => {
     if (!orders) return [];
     return [...orders].sort((a, b) => {
-        // Handle both Firestore Timestamps and JS Dates
+        // Maneja tanto Timestamps de Firestore como objetos Date de JS.
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt as any || 0).getTime();
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt as any || 0).getTime();
         return dateB - dateA;
     });
   }, [orders]);
 
+  /**
+   * Formatea un objeto de fecha (Timestamp de Firestore o Date de JS) a un string legible.
+   * @param {any} date - El objeto de fecha a formatear.
+   * @returns {string} La fecha formateada.
+   */
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
-    // Firestore Timestamps need to be converted to JS Dates
+    // Los Timestamps de Firestore necesitan convertirse a objetos Date de JS.
     const d = date.toDate ? date.toDate() : new Date(date);
-    if (isNaN(d.getTime())) return 'Invalid Date';
-    return format(d, 'PPpp'); // Format with date and time
+    if (isNaN(d.getTime())) return 'Fecha Inválida';
+    return format(d, 'PPpp'); // Formato con fecha y hora (ej: "Jul 28, 2024, 4:30:00 PM")
   }
 
   return (
     <div className="p-6">
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Order Management</CardTitle>
+          <CardTitle className="font-headline text-2xl">Gestión de Pedidos</CardTitle>
           <CardDescription>
-            View and manage all incoming customer orders.
+            Visualiza y gestiona todos los pedidos de los clientes.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Customer</TableHead>
-                <TableHead>Items</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Artículos</TableHead>
                 <TableHead className="text-right">Total</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Pickup Time</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Hora Recogida</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* Muestra esqueletos de carga mientras se obtienen los pedidos. */}
               {isOrdersLoading ? (
                  Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
                         <TableCell colSpan={7}><Skeleton className="h-8 w-full" /></TableCell>
                     </TableRow>
                  ))
+              // Muestra un mensaje si no hay pedidos.
               ) : sortedOrders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center h-24">
-                    No orders yet.
+                    Aún no hay pedidos.
                   </TableCell>
                 </TableRow>
+              // Renderiza la lista de pedidos.
               ) : (
                 sortedOrders.map((order) => (
                   <TableRow key={order.id}>
@@ -105,6 +120,7 @@ export default function AdminOrdersPage() {
                       ${order.total.toFixed(2)}
                     </TableCell>
                     <TableCell>
+                      {/* La insignia cambia de color según el estado del pedido. */}
                       <Badge
                         variant={
                           order.status === "Pending"
@@ -125,6 +141,7 @@ export default function AdminOrdersPage() {
                       {order.pickupTime || "N/A"}
                     </TableCell>
                     <TableCell className="text-right">
+                      {/* Componente con los botones de acción (Aceptar/Rechazar). */}
                       <OrderActions order={order} />
                     </TableCell>
                   </TableRow>

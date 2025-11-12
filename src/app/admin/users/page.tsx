@@ -22,8 +22,12 @@ import { UserActions } from "../components/UserActions";
 import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
+/**
+ * Página de administración para gestionar todos los usuarios registrados.
+ */
 export default function AdminUsersPage() {
   const firestore = useFirestore();
+  // Obtiene la colección de usuarios de Firestore.
   const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
   const { data: users, isLoading } = useCollection<User>(usersQuery);
 
@@ -31,21 +35,22 @@ export default function AdminUsersPage() {
     <div className="p-6">
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">User Management</CardTitle>
+          <CardTitle className="font-headline text-2xl">Gestión de Usuarios</CardTitle>
           <CardDescription>
-            View and manage all registered users.
+            Visualiza y gestiona todos los usuarios registrados.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Address</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Usuario</TableHead>
+                <TableHead>Dirección</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
+              {/* Muestra esqueletos de carga mientras se obtienen los datos. */}
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
@@ -54,18 +59,21 @@ export default function AdminUsersPage() {
                     </TableCell>
                   </TableRow>
                 ))
+              // Muestra un mensaje si no hay usuarios.
               ) : !users || users.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={3} className="text-center h-24">
-                        No users found.
+                        No se encontraron usuarios.
                     </TableCell>
                 </TableRow>
+              // Renderiza la tabla de usuarios.
               ) : (
                 users.map((user) => (
                   <TableRow key={user.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
+                          {/* Usa un servicio de avatares basado en el email para generar una imagen. */}
                           <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name} />
                           <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
@@ -79,6 +87,7 @@ export default function AdminUsersPage() {
                       <div className="text-sm">{user.address}</div>
                     </TableCell>
                     <TableCell className="text-right">
+                      {/* Componente con los botones de acción para el usuario. */}
                       <UserActions user={user} />
                     </TableCell>
                   </TableRow>

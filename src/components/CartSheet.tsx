@@ -16,17 +16,24 @@ import { Separator } from "@/components/ui/separator";
 import { useAppContext } from "@/lib/contexts/AppContext";
 import { CartItem } from "./CartItem";
 
+/**
+ * Componente que muestra el carrito de compras en un panel lateral (Sheet).
+ * @param {object} props - Propiedades del componente.
+ * @param {React.ReactNode} props.children - El elemento que actuará como disparador para abrir el panel.
+ */
 export function CartSheet({ children }: { children: React.ReactNode }) {
   const { cart, cartTotal, cartCount } = useAppContext();
 
   return (
     <Sheet>
+      {/* El disparador es el elemento hijo que se pasa al componente (ej. un botón de carrito). */}
       <SheetTrigger asChild>{children}</SheetTrigger>
       <SheetContent className="flex flex-col">
         <SheetHeader>
-          <SheetTitle>Your Cart ({cartCount})</SheetTitle>
+          <SheetTitle>Tu Carrito ({cartCount})</SheetTitle>
         </SheetHeader>
         {cart.length > 0 ? (
+          // Si el carrito tiene artículos, muestra la lista y el total.
           <>
             <ScrollArea className="flex-1 pr-4">
               <div className="flex flex-col divide-y">
@@ -42,20 +49,22 @@ export function CartSheet({ children }: { children: React.ReactNode }) {
                   <span>Total</span>
                   <span>${cartTotal.toFixed(2)}</span>
                 </div>
+                {/* Botón para proceder al checkout, que también cierra el panel. */}
                 <SheetClose asChild>
                   <Button asChild className="w-full" style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
-                    <Link href="/checkout">Proceed to Checkout</Link>
+                    <Link href="/checkout">Proceder al Pago</Link>
                   </Button>
                 </SheetClose>
               </div>
             </SheetFooter>
           </>
         ) : (
+          // Si el carrito está vacío, muestra un mensaje.
           <div className="flex-1 flex flex-col items-center justify-center text-center">
-            <h3 className="font-headline text-2xl mb-2">Your cart is empty</h3>
-            <p className="text-muted-foreground mb-4">Add some delicious burgers to get started!</p>
+            <h3 className="font-headline text-2xl mb-2">Tu carrito está vacío</h3>
+            <p className="text-muted-foreground mb-4">¡Añade algunas deliciosas hamburguesas para empezar!</p>
             <SheetClose asChild>
-                <Button variant="outline">Continue Shopping</Button>
+                <Button variant="outline">Seguir Comprando</Button>
             </SheetClose>
           </div>
         )}
