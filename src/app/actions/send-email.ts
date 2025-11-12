@@ -9,25 +9,18 @@ import type { Order } from "@/lib/types";
  * @param order - El objeto completo del pedido.
  */
 export async function sendConfirmationEmailAction(order: Order) {
-  try {
-    // En una aplicación real, podrías volver a obtener los detalles más actualizados del pedido
-    // aquí para garantizar la integridad de los datos antes de enviar el correo.
+  // Se elimina el try...catch para permitir que los errores se propaguen al cliente.
+  // El cliente (AppContext) será ahora responsable de manejar los errores de envío.
+  await sendOrderConfirmationEmail({
+    to: order.customer.email,
+    name: order.customer.name,
+    orderId: order.id,
+    pickupTime: order.pickupTime || "No especificado",
+    total: order.total,
+    items: order.items,
+  });
 
-    await sendOrderConfirmationEmail({
-      to: order.customer.email,
-      name: order.customer.name,
-      orderId: order.id,
-      pickupTime: order.pickupTime || "No especificado",
-      total: order.total,
-      items: order.items,
-    });
-
-    // Si sendOrderConfirmationEmail se ejecuta sin errores, devolvemos éxito.
-    return { success: true, message: "Proceso de envío de correo iniciado." };
-  } catch (error) {
-    console.error("Error en sendConfirmationEmailAction:", error);
-    // En una aplicación real, querrías registrar esto en un servicio de monitoreo adecuado.
-    // Ahora, si sendOrderConfirmationEmail lanza un error, se capturará aquí y se devolverá 'success: false'.
-    return { success: false, message: "No se pudo iniciar el proceso de envío de correo." };
-  }
+  // Si sendOrderConfirmationEmail se ejecuta sin errores, devolvemos éxito.
+  // Si lanza un error, la promesa de esta acción será rechazada, y el cliente lo capturará.
+  return { success: true, message: "Proceso de envío de correo iniciado." };
 }

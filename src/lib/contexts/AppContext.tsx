@@ -428,18 +428,22 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       };
 
       if (status === "Accepted") {
-          const emailResult = await sendConfirmationEmailAction(fullOrderDetails);
-          if (emailResult && emailResult.success) {
-               toast({ 
-                  title: "Order Accepted!", 
-                  description: `Pickup time: ${pickupTime}. Email process initiated.`
-              });
-          } else {
-               toast({ 
-                  title: "Order Accepted!", 
-                  description: `Pickup time: ${pickupTime}. Email configured in simulation mode.`
-              });
-          }
+        try {
+          await sendConfirmationEmailAction(fullOrderDetails);
+          toast({ 
+              title: "Order Accepted!", 
+              description: `Pickup time: ${pickupTime}. Email notification sent.`
+          });
+        } catch (error: any) {
+          console.error("Email send action failed:", error);
+          toast({
+            variant: "destructive",
+            title: "Email Send Failed",
+            description: error.message || "Could not send confirmation email.",
+          });
+          // Also emit to see it in the dev overlay
+          errorEmitter.emit('permission-error', error);
+        }
       } else if (status === "Rejected") {
           toast({
               variant: "destructive",
