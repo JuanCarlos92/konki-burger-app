@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection } from 'firebase/firestore';
+import { collection, Timestamp } from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -37,15 +37,33 @@ export default function AdminOrdersPage() {
   const { data: orders, isLoading: isOrdersLoading } = useCollection<Order>(ordersQuery);
   
   /**
+   * Convierte un valor de fecha (Timestamp de Firestore o Date de JS) a un número (milisegundos).
+   * Devuelve 0 si la fecha no es válida para asegurar una ordenación predecible.
+   * @param {any} dateValue - El valor de fecha a convertir.
+   * @returns {number} El tiempo en milisegundos o 0.
+   */
+  const getDateAsTimestamp = (dateValue: any): number => {
+    if (dateValue instanceof Timestamp) {
+      return dateValue.toMillis();
+    }
+    if (dateValue instanceof Date) {
+      return dateValue.getTime();
+    }
+    // Para strings u otros tipos, intenta crear un objeto Date.
+    const date = new Date(dateValue);
+    // Devuelve 0 si la fecha resultante no es válida.
+    return !isNaN(date.getTime()) ? date.getTime() : 0;
+  };
+  
+  /**
    * Memoiza y ordena los pedidos por fecha de creación, mostrando los más recientes primero.
    * `useMemo` evita que la ordenación se recalcule en cada render si los pedidos no han cambiado.
    */
   const sortedOrders = useMemo(() => {
     if (!orders) return [];
     return [...orders].sort((a, b) => {
-        // Maneja tanto Timestamps de Firestore (que tienen el método `toDate`) como objetos Date de JS.
-        const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt as any || 0).getTime();
-        const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt as any || 0).getTime();
+        const dateA = getDateAsTimestamp(a.createdAt);
+        const dateB = getDateAsTimestamp(b.createdAt);
         return dateB - dateA; // Orden descendente.
     });
   }, [orders]);

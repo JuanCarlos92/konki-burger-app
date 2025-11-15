@@ -67,7 +67,7 @@ export default function CheckoutPage() {
     clearCart();
     // Muestra una notificación de éxito al usuario.
     toast({
-      title: "¡Pedido Realizado! 🚀",
+      title: "¡Pedido Realizado!",
       description: "Tu deliciosa comida se está preparando. ¡Te avisaremos cuando esté lista!",
     });
     // Redirige al usuario a la página de inicio.
