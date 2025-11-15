@@ -5,12 +5,17 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
 /**
- * Un componente invisible que escucha eventos de 'permission-error' emitidos globalmente.
- * Lanza cualquier error recibido para que sea capturado por el `error.tsx` global de Next.js,
- * mostrando una superposición de error en desarrollo.
+ * Un componente "invisible" que actúa como un oyente global para errores de permisos de Firestore.
+ * Cuando se emite un evento 'permission-error' a través de `errorEmitter`, este componente
+ * captura el error y lo "lanza" (`throw`).
+ * 
+ * En el entorno de desarrollo de Next.js, esto hace que aparezca la superposición de error
+ * (error overlay), mostrando los detalles del error contextualizado que generamos,
+ * lo cual es extremadamente útil para depurar las Reglas de Seguridad de Firestore.
  */
 export function FirebaseErrorListener() {
-  // Usa el tipo de error específico para el estado para mayor seguridad de tipos.
+  // Se usa el tipo de error específico (`FirestorePermissionError`) para el estado,
+  // lo que proporciona mayor seguridad de tipos.
   const [error, setError] = useState<FirestorePermissionError | null>(null);
 
   useEffect(() => {
@@ -21,20 +26,22 @@ export function FirebaseErrorListener() {
     };
 
     // El emisor tipado (`errorEmitter`) asegura que el callback para 'permission-error'
-    // coincida con el tipo de payload esperado (FirestorePermissionError).
+    // coincida con el tipo de payload esperado (`FirestorePermissionError`).
     errorEmitter.on('permission-error', handleError);
 
-    // Se desuscribe en el desmontaje para prevenir fugas de memoria.
+    // Función de limpieza: se desuscribe del listener cuando el componente se desmonta
+    // para prevenir fugas de memoria.
     return () => {
       errorEmitter.off('permission-error', handleError);
     };
   }, []);
 
   // En el nuevo renderizado, si existe un error en el estado, lo lanza.
+  // Esto es lo que activa la superposición de error de Next.js.
   if (error) {
     throw error;
   }
 
-  // Este componente no renderiza nada.
+  // Este componente no renderiza nada visible en la interfaz de usuario.
   return null;
 }

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,8 +23,8 @@ import { useAppContext } from "@/lib/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
 
 /**
- * Esquema de validación para el formulario de checkout.
- * Define los campos requeridos y sus validaciones.
+ * Esquema de validación para el formulario de checkout usando Zod.
+ * Define los campos requeridos (`name`, `email`, `address`) y sus respectivas validaciones.
  */
 const formSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
@@ -33,16 +34,18 @@ const formSchema = z.object({
 
 /**
  * Página de Checkout.
- * Permite al usuario revisar su pedido y proporcionar sus datos para finalizar la compra.
+ * Permite al usuario revisar los artículos de su carrito, introducir sus datos personales
+ * y finalizar la compra.
  */
 export default function CheckoutPage() {
-  // Hooks para acceder al contexto de la aplicación, al router y a las notificaciones (toasts).
+  // Hooks para acceder al contexto global (carrito, usuario), al router de Next.js y a las notificaciones.
   const { cart, cartTotal, addOrder, clearCart, currentUser } = useAppContext();
   const router = useRouter();
   const { toast } = useToast();
 
-  // Configuración del formulario con react-hook-form y zod para la validación.
-  // Los valores por defecto se rellenan si hay un usuario logueado.
+  // Configuración del formulario con `react-hook-form` y `zod` para la validación.
+  // Los valores por defecto del formulario se rellenan automáticamente con los datos
+  // del usuario actual si está autenticado.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -54,15 +57,15 @@ export default function CheckoutPage() {
 
   /**
    * Función que se ejecuta al enviar el formulario.
-   * Procesa el pedido, limpia el carrito y redirige al usuario.
-   * @param values - Los datos del formulario validados.
+   * Procesa el pedido, limpia el carrito y redirige al usuario a la página de inicio.
+   * @param {object} values - Los datos del formulario ya validados por Zod.
    */
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // Llama a la función del contexto para añadir el pedido.
+    // Llama a la función del contexto para crear el pedido con los datos del cliente.
     addOrder({ customer: values });
     // Limpia el carrito después de realizar el pedido.
     clearCart();
-    // Muestra una notificación de éxito.
+    // Muestra una notificación de éxito al usuario.
     toast({
       title: "¡Pedido Realizado! 🚀",
       description: "Tu deliciosa comida se está preparando. ¡Te avisaremos cuando esté lista!",
@@ -71,7 +74,8 @@ export default function CheckoutPage() {
     router.push("/");
   }
 
-  // Si el carrito está vacío, muestra un mensaje y un botón para volver al menú.
+  // Si el carrito está vacío, no se muestra el formulario de checkout.
+  // En su lugar, se muestra un mensaje informativo y un botón para volver al menú.
   if (cart.length === 0) {
     return (
         <div className="container py-12 text-center">
@@ -86,9 +90,10 @@ export default function CheckoutPage() {
 
   // Renderiza la página de checkout con el formulario y el resumen del pedido.
   return (
-    <div className="container py-12">
-      <h1 className="text-4xl font-bold font-headline text-center mb-8">Checkout</h1>
+    <div className="container py-12 mx-auto">
+      <h1 className="text-4xl font-bold font-headline text-center mb-8">Finalizar Compra</h1>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        
         {/* Columna del formulario de datos del cliente */}
         <div>
           <Card>
@@ -98,6 +103,7 @@ export default function CheckoutPage() {
             <CardContent>
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {/* Campo para el nombre completo */}
                   <FormField
                     control={form.control}
                     name="name"
@@ -111,6 +117,7 @@ export default function CheckoutPage() {
                       </FormItem>
                     )}
                   />
+                  {/* Campo para el email */}
                   <FormField
                     control={form.control}
                     name="email"
@@ -124,6 +131,7 @@ export default function CheckoutPage() {
                       </FormItem>
                     )}
                   />
+                  {/* Campo para la dirección */}
                   <FormField
                     control={form.control}
                     name="address"
@@ -137,6 +145,7 @@ export default function CheckoutPage() {
                       </FormItem>
                     )}
                   />
+                  {/* Botón de envío del formulario, que también muestra el total del carrito */}
                   <Button type="submit" className="w-full mt-6" size="lg" style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
                     Realizar Pedido - ${cartTotal.toFixed(2)}
                   </Button>
@@ -153,11 +162,14 @@ export default function CheckoutPage() {
                     <CardTitle className="font-headline">Resumen del Pedido</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                    {/* Itera sobre los artículos del carrito para mostrarlos */}
                     {cart.map(item => (
                         <div key={item.product.id} className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md">
-                                    <Image src={item.product.image.src} alt={item.product.image.alt} fill className="object-cover" />
+                                    {item.product.imageUrl && (
+                                        <Image src={item.product.imageUrl} alt={item.product.name} fill className="object-cover" />
+                                    )}
                                </div>
                                <div>
                                    <p className="font-semibold">{item.product.name}</p>

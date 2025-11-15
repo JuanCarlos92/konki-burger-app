@@ -13,20 +13,21 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import {FirestorePermissionError} from '@/firebase/errors';
 
 /**
- * Inicia una operación `setDoc` (crear o sobrescribir) para una referencia de documento.
- * NO espera a que la operación de escritura termine. La ejecución continúa inmediatamente.
- * Captura errores de permisos y los emite globalmente.
- * @param {DocumentReference} docRef - La referencia al documento.
- * @param {any} data - Los datos a escribir.
- * @param {SetOptions} options - Opciones de `setDoc` (ej. `{ merge: true }`).
+ * Inicia una operación `setDoc` (crear o sobrescribir) para una referencia de documento de forma no bloqueante.
+ * NO espera a que la operación de escritura termine en el servidor. La ejecución del código continúa inmediatamente.
+ * Captura errores de permisos y los emite globalmente a través de `errorEmitter`.
+ * @param {DocumentReference} docRef - La referencia al documento que se va a escribir.
+ * @param {any} data - Los datos que se van a escribir en el documento.
+ * @param {SetOptions} options - Opciones de `setDoc` (p. ej., `{ merge: true }` para actualizar campos en lugar de sobrescribir).
  */
 export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
   setDoc(docRef, data, options).catch(error => {
+    // Si la operación falla (p.ej. por reglas de seguridad), se crea un error contextualizado.
     errorEmitter.emit(
       'permission-error',
       new FirestorePermissionError({
         path: docRef.path,
-        operation: 'write',
+        operation: 'write', // 'write' cubre tanto creación como actualización.
         requestResourceData: data,
       })
     )
@@ -34,11 +35,11 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
 }
 
 /**
- * Inicia una operación `addDoc` (añadir un nuevo documento con ID autogenerado) para una referencia de colección.
+ * Inicia una operación `addDoc` (añadir un nuevo documento con un ID autogenerado) a una colección.
  * NO espera a que la operación termine.
- * @param {CollectionReference} colRef - La referencia a la colección.
+ * @param {CollectionReference} colRef - La referencia a la colección donde se añadirá el documento.
  * @param {any} data - Los datos del nuevo documento.
- * @returns La promesa de la operación, aunque típicamente no es esperada por quien la llama.
+ * @returns La promesa de la operación `addDoc`, aunque típicamente no es esperada por quien la llama.
  */
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
   const promise = addDoc(colRef, data)
@@ -58,8 +59,8 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
 /**
  * Inicia una operación `updateDoc` para una referencia de documento.
  * NO espera a que la operación termine.
- * @param {DocumentReference} docRef - La referencia al documento a actualizar.
- * @param {any} data - Los campos a actualizar.
+ * @param {DocumentReference} docRef - La referencia al documento que se va a actualizar.
+ * @param {any} data - Un objeto con los campos y valores a actualizar.
  */
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
   updateDoc(docRef, data)
@@ -78,7 +79,7 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
 /**
  * Inicia una operación `deleteDoc` para una referencia de documento.
  * NO espera a que la operación termine.
- * @param {DocumentReference} docRef - La referencia al documento a eliminar.
+ * @param {DocumentReference} docRef - La referencia al documento que se va a eliminar.
  */
 export function deleteDocumentNonBlocking(docRef: DocumentReference) {
   deleteDoc(docRef)

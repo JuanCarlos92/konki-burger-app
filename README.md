@@ -6,7 +6,7 @@ Esta aplicación ofrece una experiencia fluida tanto para los clientes que desea
 
 ## Características Principales
 
-### Portal del Cliente
+### 🛍️ Portal del Cliente
 
 -   **Menú Interactivo:** Los usuarios pueden explorar el catálogo completo de productos, incluyendo hamburguesas, acompañamientos y bebidas.
 -   **Filtrado por Categorías:** Filtra fácilmente los productos por categorías para encontrar rápidamente lo que buscas.
@@ -20,7 +20,7 @@ Esta aplicación ofrece una experiencia fluida tanto para los clientes que desea
     -   Inicio de sesión seguro.
     -   Posibilidad de realizar pedidos como invitado sin necesidad de una cuenta.
 
-### Panel de Administración (Ruta Protegida)
+### 🛡️ Panel de Administración (Ruta Protegida)
 
 -   **Dashboard Central:** Un panel de control que muestra estadísticas clave de un vistazo: pedidos pendientes, número total de productos y usuarios registrados.
 -   **Gestión de Pedidos:**
@@ -30,7 +30,7 @@ Esta aplicación ofrece una experiencia fluida tanto para los clientes que desea
 -   **Gestión de Productos:** Un CRUD (Crear, Leer, Actualizar, Eliminar) completo para los productos del menú. Añade nuevas hamburguesas, edita precios o elimina artículos del catálogo.
 -   **Gestión de Usuarios:** Visualiza la lista de todos los usuarios registrados en el sistema.
 
-## Tecnologías Utilizadas
+## 🚀 Tecnologías Utilizadas
 
 Este proyecto integra un stack tecnológico moderno centrado en la eficiencia, la escalabilidad y una excelente experiencia de desarrollador.
 
@@ -44,7 +44,7 @@ Este proyecto integra un stack tecnológico moderno centrado en la eficiencia, l
 -   **Gestión de Formularios:** **React Hook Form** para formularios performantes y **Zod** para una validación de esquemas robusta.
 -   **Gestión de Estado:** **React Context API** para una gestión de estado global y centralizada (carrito de compras, autenticación, etc.).
 
-### Backend y Despliegue (Firebase)
+### ☁️ Backend y Despliegue (Firebase)
 
 -   **Base de Datos:** **Firestore** (base de datos NoSQL) para almacenar toda la información de productos, usuarios y pedidos.
 -   **Autenticación:** **Firebase Authentication** para gestionar el registro, inicio de sesión y la seguridad de los usuarios.
@@ -52,8 +52,8 @@ Este proyecto integra un stack tecnológico moderno centrado en la eficiencia, l
 -   **Gestión de Secretos:** **Secret Manager** (integrado con Firebase) para almacenar de forma segura las credenciales de servicios de terceros.
 -   **Reglas de Seguridad:** Reglas de **Firestore Security Rules** para proteger la base de datos y definir los permisos de acceso de cada usuario.
 
-### Servicios Externos
+### 📧 Servicios Externos
 
 -   **Envío de Correos:** **Nodemailer** configurado con **Gmail** para el envío de notificaciones de confirmación de pedidos.
 
-
+<!-- Trigger re-deploy -->

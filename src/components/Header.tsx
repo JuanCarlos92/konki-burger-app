@@ -17,23 +17,25 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useEffect, useState } from "react";
 
 /**
- * Componente del encabezado de la aplicación.
- * Muestra el logo, la navegación, el icono del carrito y las opciones de usuario (login/logout/perfil).
+ * Componente del encabezado principal de la aplicación.
+ * Muestra el logo, la navegación, el icono del carrito de compras y las opciones de usuario
+ * (como iniciar sesión, registrarse, ver el perfil o cerrar sesión).
  */
 export function Header() {
   const { cartCount, isAuthenticated, logout, currentUser, isAdmin } = useAppContext();
-  // Estado para asegurar que el renderizado dependiente del cliente (como el estado de autenticación)
-  // solo ocurra después de la hidratación para evitar errores de mismatch.
+  // Estado para asegurar que el renderizado que depende del cliente (como el estado de autenticación)
+  // solo ocurra después de la hidratación en el navegador. Esto previene errores de "hydration mismatch".
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    // Al montar el componente en el cliente, se establece isClient a true.
     setIsClient(true);
   }, []);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 max-w-screen-2xl items-center">
-        {/* Logo y nombre de la aplicación */}
+      <div className="container mx-auto flex h-14 items-center px-4">
+        {/* Logo y nombre de la aplicación, enlazados a la página de inicio. */}
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <Menu className="h-6 w-6 text-primary" />
           <span className="font-bold font-headline text-lg sm:inline-block">
@@ -42,15 +44,10 @@ export function Header() {
         </Link>
         {/* Navegación principal */}
         <nav className="flex items-center gap-4 text-sm lg:gap-6">
-          <Link
-            href="/"
-            className="transition-colors hover:text-foreground/80 text-foreground/60"
-          >
-            Menú
-          </Link>
+          
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-2">
-          {/* Carrito de compras, que abre un panel lateral (Sheet) */}
+          {/* Carrito de compras, que abre un panel lateral (`CartSheet`). */}
           <CartSheet>
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
@@ -63,9 +60,9 @@ export function Header() {
             </Button>
           </CartSheet>
 
-          {/* Lógica condicional para mostrar el menú de usuario o los botones de login/registro */}
+          {/* Lógica condicional para mostrar el menú de usuario o los botones de login/registro. */}
           {isClient && isAuthenticated && currentUser ? (
-            // Si el usuario está autenticado, muestra un menú desplegable con su perfil.
+            // Si el usuario está autenticado, muestra un menú desplegable con su avatar.
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -100,7 +97,8 @@ export function Header() {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
-            // Si el usuario no está autenticado, muestra los botones de login y registro.
+            // Si el usuario no está autenticado, muestra los botones de "Iniciar Sesión" y "Registrarse".
+            // Se comprueba `isClient` para evitar el "hydration mismatch".
             isClient && (
                 <div className="flex items-center space-x-2">
                     <Button asChild variant="ghost">

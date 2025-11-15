@@ -19,6 +19,7 @@ import { useAppContext } from "@/lib/contexts/AppContext";
 import { ClientTooltipProvider } from "@/components/ui/client-tooltip-provider";
 
 // Define los elementos de navegación para la barra lateral del administrador.
+// Cada objeto contiene la ruta, el icono y la etiqueta para un enlace del menú.
 const navItems = [
   { href: "/admin/orders", icon: ShoppingBasket, label: "Pedidos" },
   { href: "/admin/products", icon: Package, label: "Productos" },
@@ -27,18 +28,19 @@ const navItems = [
 
 /**
  * Componente de la barra lateral para el panel de administración.
- * Proporciona la navegación principal dentro del área de administración.
+ * Proporciona la navegación principal dentro del área de administración y envuelve el contenido
+ * de la página correspondiente.
  * @param {object} props - Propiedades del componente.
  * @param {React.ReactNode} props.children - El contenido principal de la página que se renderizará a la derecha de la barra.
  */
 export function AdminSidebar({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const { currentUser, logout } = useAppContext();
+  const pathname = usePathname(); // Hook para obtener la ruta actual y resaltar el enlace activo.
+  const { currentUser, logout } = useAppContext(); // Hook para obtener el usuario actual y la función de cierre de sesión.
 
   return (
-    // Proveedor para los tooltips flotantes que aparecen al colapsar la barra.
+    // Proveedor para los tooltips flotantes que aparecen al colapsar la barra lateral.
     <ClientTooltipProvider>
-      {/* Proveedor de estado para la barra lateral (expandida/colapsada). */}
+      {/* Proveedor de estado para la barra lateral (controla si está expandida/colapsada). */}
       <SidebarProvider>
         <Sidebar>
           {/* Cabecera de la barra lateral con el logo y el nombre de la aplicación. */}
@@ -52,6 +54,7 @@ export function AdminSidebar({ children }: { children: React.ReactNode }) {
           {/* Contenido principal de la barra lateral con el menú de navegación. */}
           <SidebarContent>
             <SidebarMenu>
+              {/* Itera sobre los elementos de navegación para crear los botones del menú. */}
               {navItems.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <Link href={item.href}>
@@ -78,11 +81,12 @@ export function AdminSidebar({ children }: { children: React.ReactNode }) {
                   </Link>
                 </SidebarMenuItem>
 
-                {/* Muestra la información del usuario si está logueado. */}
+                {/* Muestra la información del usuario (avatar y nombre) si está logueado. */}
                 {currentUser && (
                     <SidebarMenuItem>
                       <div className="flex items-center gap-2 p-2">
                           <Avatar className="h-9 w-9">
+                              {/* El avatar se genera dinámicamente a partir del email del usuario. */}
                               <AvatarImage src={`https://avatar.vercel.sh/${currentUser.email}.png`} alt={currentUser.name} />
                               <AvatarFallback>{currentUser.name.charAt(0)}</AvatarFallback>
                           </Avatar>

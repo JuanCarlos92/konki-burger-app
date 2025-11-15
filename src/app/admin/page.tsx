@@ -11,13 +11,14 @@ import type { User, Order, Product } from "@/lib/types";
 
 /**
  * Página del panel principal de administración (Dashboard).
- * Muestra un resumen de estadísticas clave de la aplicación.
+ * Muestra un resumen de estadísticas clave como pedidos pendientes, total de productos y usuarios,
+ * así como una lista de la actividad reciente (últimos pedidos).
  */
 export default function AdminDashboardPage() {
     const { currentUser } = useAppContext();
     const firestore = useFirestore();
 
-    // Hooks para obtener las colecciones de usuarios, pedidos y productos de Firestore.
+    // Hooks para obtener las colecciones de usuarios, pedidos y productos de Firestore en tiempo real.
     const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
     const { data: users, isLoading: isLoadingUsers } = useCollection<User>(usersQuery);
 
@@ -27,34 +28,35 @@ export default function AdminDashboardPage() {
     const productsQuery = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
     const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(productsQuery);
 
-    // Calcula el número de pedidos pendientes.
+    // Calcula el número de pedidos pendientes filtrando la lista de pedidos.
     const pendingOrders = (orders || []).filter(o => o.status === 'Pending').length;
 
     /**
-     * Memoiza y ordena los pedidos por fecha de creación para mostrar los más recientes.
+     * Memoiza y ordena los pedidos por fecha de creación para mostrar los más recientes primero.
+     * `useMemo` optimiza el rendimiento al evitar recalcular en cada render si los datos no cambian.
      */
     const sortedOrders = useMemo(() => {
         if (!orders) return [];
         return [...orders].sort((a, b) => {
             const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(0);
             const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(0);
-            return dateB.getTime() - dateA.getTime();
+            return dateB.getTime() - dateA.getTime(); // Orden descendente.
         });
     }, [orders]);
 
-    // Obtiene los 5 pedidos más recientes.
+    // Obtiene los 5 pedidos más recientes para la sección de "Actividad Reciente".
     const recentOrders = sortedOrders.slice(0, 5);
 
     /**
-     * Formatea la fecha de un pedido a un formato de hora legible.
+     * Formatea la fecha de un pedido a un formato de hora legible (ej: "4:30 PM").
      * @param {any} date - El objeto de fecha (Timestamp de Firestore o Date de JS).
-     * @returns {string} La hora formateada.
+     * @returns {string} La hora formateada o un texto indicativo si no es válida.
      */
     const formatOrderDate = (date: any) => {
         if (!date) return 'N/A';
         const d = date.toDate ? date.toDate() : new Date(date);
         if (isNaN(d.getTime())) return 'Fecha Inválida';
-        return format(d, 'p'); // 'p' es para la hora local (ej: "4:30 PM").
+        return format(d, 'p'); // 'p' es el formato para la hora local con AM/PM.
     };
 
     return (

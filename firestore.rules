@@ -1,35 +1,33 @@
 
 /**
- * @description This ruleset enforces a strict user-ownership model for user data,
- * and restricts order access to authenticated administrators. Public read access is granted for categories and products.
+ * @description Este conjunto de reglas impone un modelo estricto de propiedad de datos
+ * para la información del usuario y restringe el acceso a los pedidos a los administradores autenticados.
+ * Se concede acceso de lectura público para las categorías y productos.
  * @dataStructure
- * - /categories/{categoryId}: Publicly readable product categories.
- * - /products/{productId}: Publicly readable product information.
- * - /users/{userId}: User profiles, accessible only to the user themselves.
- * - /users/{userId}/cart/{productId}: User's shopping cart items.
- * - /orders/{orderId}: Order information, accessible only to admins.
- * - /orders/{orderId}/orderItems/{orderItemId}: Items within an order, accessible only to admins.
- * - /roles_admin/{userId}: Indicates admin privileges; existence grants admin access.
- * - /users/{userId}/orders/{orderId}: Orders created by a user; access restricted to the user.
- * - /users/{userId}/orders/{orderId}/orderItems/{orderItemId}: Items within an order for a user; access restricted to the user.
+ * - /categories/{categoryId}: Categorías de productos, legibles públicamente.
+ * - /products/{productId}: Información de productos, legible públicamente.
+ * - /users/{userId}: Perfiles de usuario, accesibles solo por el propio usuario.
+ * - /users/{userId}/cart/{productId}: Artículos del carrito de compras del usuario.
+ * - /orders/{orderId}: Información de pedidos, accesible solo para administradores.
+ * - /orders/{orderId}/orderItems/{orderItemId}: Artículos dentro de un pedido, accesibles solo para administradores.
+ * - /users/{userId}/orders/{orderId}: Pedidos creados por un usuario; acceso restringido al usuario.
+ * - /users/{userId}/orders/{orderId}/orderItems/{orderItemId}: Artículos de un pedido de un usuario; acceso restringido al usuario.
  * @keySecurityDecisions
- * - User listing is disallowed for non-admins.
- * - All write operations require a verified, signed-in user.
- * - Data types are not strictly validated during this prototyping phase,
- *   but authorization-critical fields are checked for consistency.
+ * - El listado de usuarios no está permitido para quienes no son administradores.
+ * - Todas las operaciones de escritura requieren un usuario autenticado y verificado.
+ * - Los tipos de datos no se validan estrictamente, pero los campos críticos para la autorización se verifican.
  * @denormalizationForAuthorization
- * - Admin status is determined by the existence of a document in the /roles_admin/{userId} collection,
- *   avoiding the need for complex role lookups.
+ * - El estado de administrador se determina por el correo electrónico del usuario autenticado ('konkiburger@gmail.com').
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Allows anyone to read categories, but restricts creation, updates, and deletions to admins.
+     * @description Permite a cualquiera leer las categorías, pero restringe la creación, actualización y eliminación a los administradores.
      * @path /categories/{categoryId}
-     * @allow (get, list) Any user (authenticated or not) can read category information.
-     * @allow (create, update, delete) Only admin users can manage categories.
+     * @allow (get, list) Cualquier usuario (autenticado o no) puede leer la información de la categoría.
+     * @allow (create, update, delete) Solo los usuarios administradores pueden gestionar las categorías.
      */
     match /categories/{categoryId} {
       allow get, list: if true;
@@ -37,10 +35,10 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows anyone to read products, but restricts creation, updates, and deletions to admins.
+     * @description Permite a cualquiera leer los productos, pero restringe la creación, actualización y eliminación a los administradores.
      * @path /products/{productId}
-     * @allow (get, list) Any user (authenticated or not) can read product information.
-     * @allow (create, update, delete) Only admin users can manage products.
+     * @allow (get, list) Cualquier usuario (autenticado o no) puede leer la información del producto.
+     * @allow (create, update, delete) Solo los usuarios administradores pueden gestionar los productos.
      */
     match /products/{productId} {
       allow get, list: if true;
@@ -48,17 +46,17 @@ service cloud.firestore {
     }
 
     /**
-     * @description Enforces user-ownership for profiles, orders, and shopping carts.
+     * @description Aplica la propiedad del usuario para perfiles, pedidos y carritos de compras.
      * @path /users/{userId}
      */
     match /users/{userId} {
-      // User can manage their own profile. Admins can list/delete users.
+      // El usuario puede gestionar su propio perfil. Los administradores pueden listar/eliminar usuarios.
       allow get, update, create: if isSignedIn() && isOwner(userId);
       allow list: if isSignedIn() && isAdmin();
       allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
 
       /**
-       * @description User's shopping cart. Only the user can read or write their own cart items.
+       * @description Carrito de compras del usuario. Solo el usuario puede leer o escribir sus propios artículos del carrito.
        * @path /users/{userId}/cart/{productId}
        */
       match /cart/{productId} {
@@ -66,23 +64,23 @@ service cloud.firestore {
       }
       
       /**
-       * @description Defines rules for a user's private orders collection.
+       * @description Define las reglas para la colección de pedidos privados de un usuario.
        * @path /users/{userId}/orders
        */
       match /orders/{orderId} {
         /**
-         * @description Enforces user-ownership for accessing their own order documents.
-         *              Also allows admins to update orders (e.g., change status).
+         * @description Aplica la propiedad del usuario para acceder a sus propios documentos de pedido.
+         *              También permite a los administradores actualizar pedidos (p. ej., cambiar el estado).
          */
         allow get, delete: if isSignedIn() && isOwner(userId);
         allow update: if isSignedIn() && (isOwner(userId) || isAdmin());
         /**
-         * @description Allow user to create an order for themselves.
+         * @description Permite al usuario crear un pedido para sí mismo.
          */
         allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == request.auth.uid;
         
         /**
-          * @description Enforces user-ownership; only the user can read or write their own order items.
+          * @description Aplica la propiedad del usuario; solo el usuario puede leer o escribir sus propios artículos de pedido.
           * @path /users/{userId}/orders/{orderId}/orderItems/{orderItemId}
           */
         match /orderItems/{orderItemId} {
@@ -92,58 +90,64 @@ service cloud.firestore {
     }
 
     /**
-     * @description Allows admin users to manage all orders, and authenticated users to create their own.
+     * @description Permite a los administradores gestionar todos los pedidos y a los usuarios autenticados crear los suyos.
      * @path /orders/{orderId}
-     * @allow (get, list, delete) Admin users can perform any operation on orders.
-     * @allow (create) Authenticated users can create new orders if the order's userId matches their own.
+     * @allow (get, list, update, delete) Los usuarios administradores pueden realizar cualquier operación en los pedidos.
+     * @allow (create) Los usuarios autenticados pueden crear nuevos pedidos si el userId del pedido coincide con su propio uid,
+     *                y los usuarios no autenticados (invitados) pueden crear pedidos si el userId es 'guest'.
      */
     match /orders/{orderId} {
-      allow get, list, delete: if isSignedIn() && isAdmin();
-      allow update: if isSignedIn() && isAdmin();
+      allow get, list, update, delete: if isSignedIn() && isAdmin();
       allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid) || 
                        (request.auth == null && request.resource.data.userId == 'guest');
 
       /**
-       * @description Allows admin users to manage order items.
+       * @description Permite a los administradores gestionar los artículos de los pedidos.
        * @path /orders/{orderId}/orderItems/{orderItemId}
-       * @allow (get, list, create, update, delete) Admin users can perform any operation on order items.
-       * @deny Non-admin users cannot access this data.
+       * @allow (read, write) Los usuarios administradores pueden realizar cualquier operación sobre los artículos del pedido.
        */
       match /orderItems/{orderItemId} {
         allow read, write: if isSignedIn() && isAdmin();
       }
     }
     
+    // La colección roles_admin ya no es necesaria con la comprobación de administrador basada en email.
+    
+    // ---- Funciones auxiliares -----
+    
     /**
-     * @description Allows a user to create their own admin role document, and admins to manage all roles.
-     * @path /roles_admin/{userId}
-     * @allow get: Any signed-in user can check for an admin document.
-     * @allow create: if request.auth.uid == userId;
-     * @allow (list, update, delete): if isSignedIn() && isAdmin();
-    */
-     match /roles_admin/{userId} {
-        allow get: if isSignedIn();
-        allow create: if request.auth.uid == userId;
-        allow list, update, delete: if isSignedIn() && isAdmin();
-    }
-
-    // ---- Helper functions -----
+     * @description Comprueba si el usuario que realiza la solicitud ha iniciado sesión.
+     * @returns {boolean} True si `request.auth` no es nulo.
+     */
     function isSignedIn() {
       return request.auth != null;
     }
 
+    /**
+     * @description Comprueba si el usuario autenticado es el propietario del documento.
+     * @param {string} userId - El ID de usuario a comprobar.
+     * @returns {boolean} True si el UID del usuario autenticado coincide con el `userId` proporcionado.
+     */
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
+    /**
+     * @description Comprueba si el usuario es el propietario de un documento que ya existe.
+     * @param {string} userId - El ID de usuario a comprobar.
+     * @returns {boolean} True si el usuario es propietario y el recurso (`resource`) existe.
+     */
     function isExistingOwner(userId) {
       return isOwner(userId) && resource != null;
     }
 
+    /**
+     * @description Comprueba si el usuario autenticado es un administrador.
+     * La lógica de administrador está centralizada aquí: el email debe ser 'konkiburger@gmail.com'.
+     * @returns {boolean} True si el usuario ha iniciado sesión y su email es el del administrador.
+     */
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return isSignedIn() && request.auth.token.email == 'konkiburger@gmail.com';
     }
   }
 }
-
-    

@@ -25,34 +25,35 @@ import type { Order } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /**
- * Página de administración para gestionar todos los pedidos.
- * Muestra una tabla con todos los pedidos de los clientes.
+ * Página de administración para gestionar todos los pedidos de la aplicación.
+ * Muestra una tabla con detalles de cada pedido y acciones para aceptarlos o rechazarlos.
  */
 export default function AdminOrdersPage() {
   const firestore = useFirestore();
   
   // Obtiene todos los pedidos de la colección 'orders' en Firestore.
-  // En un entorno de producción, esto debería paginarse.
+  // En una aplicación de producción, sería recomendable implementar paginación aquí.
   const ordersQuery = useMemoFirebase(() => collection(firestore, 'orders'), [firestore]);
   const { data: orders, isLoading: isOrdersLoading } = useCollection<Order>(ordersQuery);
   
   /**
-   * Memoiza y ordena los pedidos por fecha de creación, de más reciente a más antiguo.
+   * Memoiza y ordena los pedidos por fecha de creación, mostrando los más recientes primero.
+   * `useMemo` evita que la ordenación se recalcule en cada render si los pedidos no han cambiado.
    */
   const sortedOrders = useMemo(() => {
     if (!orders) return [];
     return [...orders].sort((a, b) => {
-        // Maneja tanto Timestamps de Firestore como objetos Date de JS.
+        // Maneja tanto Timestamps de Firestore (que tienen el método `toDate`) como objetos Date de JS.
         const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt as any || 0).getTime();
         const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt as any || 0).getTime();
-        return dateB - dateA;
+        return dateB - dateA; // Orden descendente.
     });
   }, [orders]);
 
   /**
    * Formatea un objeto de fecha (Timestamp de Firestore o Date de JS) a un string legible.
    * @param {any} date - El objeto de fecha a formatear.
-   * @returns {string} La fecha formateada.
+   * @returns {string} La fecha formateada o un texto indicativo si no es válida.
    */
   const formatDate = (date: any) => {
     if (!date) return 'N/A';
@@ -99,7 +100,7 @@ export default function AdminOrdersPage() {
                     Aún no hay pedidos.
                   </TableCell>
                 </TableRow>
-              // Renderiza la lista de pedidos.
+              // Renderiza la lista de pedidos en filas de la tabla.
               ) : (
                 sortedOrders.map((order) => (
                   <TableRow key={order.id}>
@@ -110,6 +111,7 @@ export default function AdminOrdersPage() {
                       </div>
                     </TableCell>
                     <TableCell>
+                      {/* Muestra un resumen de los artículos del pedido. */}
                       {order.items.map((item: any) => (
                         <div key={item.product.id} className="text-sm">
                           {item.quantity} x {item.product.name}
@@ -120,7 +122,7 @@ export default function AdminOrdersPage() {
                       ${order.total.toFixed(2)}
                     </TableCell>
                     <TableCell>
-                      {/* La insignia cambia de color según el estado del pedido. */}
+                      {/* La insignia cambia de color según el estado del pedido para una rápida identificación visual. */}
                       <Badge
                         variant={
                           order.status === "Pending"
@@ -141,7 +143,7 @@ export default function AdminOrdersPage() {
                       {order.pickupTime || "N/A"}
                     </TableCell>
                     <TableCell className="text-right">
-                      {/* Componente con los botones de acción (Aceptar/Rechazar). */}
+                      {/* Componente que contiene los botones de acción (Aceptar/Rechazar). */}
                       <OrderActions order={order} />
                     </TableCell>
                   </TableRow>

@@ -205,28 +205,46 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  /**
+   * Inicia sesión de un usuario.
+   * @param {string} email - Email del usuario.
+   * @param {string} password - Contraseña del usuario.
+   * @returns {Promise<any>} Las credenciales del usuario.
+   */
   const login = async (email: string, password: string) => {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     await createFirestoreUser(userCredential.user);
     return userCredential;
   };
   
+  /**
+   * Registra un nuevo usuario.
+   * @param {string} name - Nombre del usuario.
+   * @param {string} email - Email del usuario.
+   * @param {string} address - Dirección del usuario.
+   * @param {string} password - Contraseña del usuario.
+   * @returns {Promise<any>} Las credenciales del usuario.
+   */
   const register = async (name: string, email: string, address: string, password: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await createFirestoreUser(userCredential.user, name, address);
     return userCredential;
   };
 
+  /**
+   * Cierra la sesión del usuario.
+   */
   const logout = () => {
     signOut(auth).then(() => {
         setCurrentUser(null);
         setCart([]);
-        router.push('/login');
     });
   };
 
   /**
    * Añade un producto al carrito o incrementa su cantidad.
+   * @param {Product} product - El producto a añadir.
+   * @param {number} [quantity=1] - La cantidad a añadir.
    */
   const addToCart = (product: Product, quantity: number = 1) => {
     const newQuantity = (cart.find(item => item.product.id === product.id)?.quantity || 0) + quantity;
@@ -249,6 +267,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   /**
    * Elimina un producto del carrito.
+   * @param {string} productId - El ID del producto a eliminar.
    */
   const removeFromCart = (productId: string) => {
     setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
@@ -264,6 +283,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   /**
    * Actualiza la cantidad de un producto en el carrito.
+   * @param {string} productId - El ID del producto a actualizar.
+   * @param {number} quantity - La nueva cantidad.
    */
   const updateCartQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
@@ -300,11 +321,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Memoiza el cálculo del total y la cantidad de artículos del carrito.
   const cartTotal = useMemo(() => cart.reduce((total, item) => total + item.product.price * item.quantity, 0), [cart]);
   const cartCount = useMemo(() => cart.reduce((count, item) => count + item.quantity, 0), [cart]);
 
   /**
    * Crea un nuevo pedido en Firestore.
+   * @param {Omit<Order, 'id' | 'createdAt' | 'status'| 'total' | 'items' | 'userId'>} orderData - Datos del cliente para el pedido.
    */
   const addOrder = (orderData: Omit<Order, 'id' | 'createdAt' | 'status'| 'total' | 'items' | 'userId'>) => {
     const commonOrderData = { createdAt: serverTimestamp(), status: 'Pending', items: cart, total: cartTotal, ...orderData };
@@ -324,7 +347,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   /**
-   * Actualiza el estado de un pedido y envía un correo de confirmación si es aceptado.
+   * Actualiza el estado de un pedido y envía un correo de confirmación.
+   * @param {string} orderId - El ID del pedido.
+   * @param {Order['status']} status - El nuevo estado ('Accepted' o 'Rejected').
+   * @param {string} customerEmail - El email del cliente para la notificación.
+   * @param {string} [pickupTime] - La hora de recogida, si el pedido es aceptado.
    */
   const updateOrderStatus = async (orderId: string, status: Order['status'], customerEmail: string, pickupTime?: string) => {
     const publicOrderRef = doc(firestore, 'orders', orderId);
@@ -334,46 +361,53 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         if (!orderSnap.exists()) {
             throw new Error("Pedido no encontrado");
         }
-        const orderData = orderSnap.data() as Order;
+        
+        // Prepara los datos del pedido para actualizar y para el correo
+        const orderData = { id: orderSnap.id, ...orderSnap.data() } as Order;
         const userId = orderData.userId;
         const batch = writeBatch(firestore);
         const updateData: any = { status };
+
         if (pickupTime) {
             updateData.pickupTime = pickupTime;
+            orderData.pickupTime = pickupTime; // Añade al objeto para el correo
         }
+
+        // Actualiza el pedido en la colección pública y en la del usuario si existe
         batch.update(publicOrderRef, updateData);
         if (userId && userId !== 'guest') {
             const userOrderRef = doc(firestore, `users/${userId}/orders`, orderId);
             batch.update(userOrderRef, updateData);
         }
+
+        // Ejecuta la escritura en la base de datos
         await batch.commit();
 
-        const fullOrderDetails: Order = { ...orderData, ...updateData, id: orderId, createdAt: orderData.createdAt };
+        // Si se acepta, intenta enviar el correo
         if (status === "Accepted") {
-            try {
-                await sendConfirmationEmailAction(fullOrderDetails);
+            const emailResult = await sendConfirmationEmailAction(orderData);
+            if (emailResult.success) {
                 toast({ 
                     title: "¡Pedido Aceptado!", 
-                    description: `Hora de recogida: ${pickupTime}. Notificación por email enviada.`
+                    description: `Hora de recogida: ${pickupTime}. Se ha enviado una notificación por correo.`
                 });
-            } catch (error: any) {
-                console.error("La acción de envío de correo falló:", error);
-                toast({
+            } else {
+                 toast({ 
                     variant: "destructive",
-                    title: "Fallo en el Envío del Email",
-                    description: error.message || "No se pudo enviar el correo de confirmación.",
+                    title: "Pedido Aceptado, pero el correo falló", 
+                    description: `El pedido está confirmado, pero hubo un problema al enviar el correo. Revisa la configuración. (Error: ${emailResult.message})`
                 });
-                errorEmitter.emit('permission-error', error);
             }
         } else if (status === "Rejected") {
             toast({
                 variant: "destructive",
                 title: "Pedido Rechazado",
-                description: `Notificación para ${customerEmail} simulada.`,
+                description: `Se ha rechazado el pedido.`,
             });
         }
     } catch (error) {
-        console.error("No se pudo actualizar el estado del pedido. Esto podría deberse a una extensión del navegador (bloqueador de anuncios) o a un problema de red.", error);
+        // Captura errores de base de datos o de la acción de correo
+        console.error("No se pudo actualizar el estado del pedido o enviar el correo.", error);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `orders/${orderId}`,
             operation: 'update',
@@ -386,22 +420,40 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     }
   };
   
+  /**
+   * Añade un nuevo producto a Firestore.
+   * @param {Omit<Product, 'id'>} productData - Datos del producto sin el ID.
+   */
   const addProduct = (productData: Omit<Product, 'id'>) => {
     addDoc(collection(firestore, 'products'), productData).catch(error => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: 'products', operation: 'create', requestResourceData: productData })));
   }
   
+  /**
+   * Actualiza un producto existente en Firestore.
+   * @param {string} productId - ID del producto a actualizar.
+   * @param {Partial<Product>} productData - Datos parciales del producto a actualizar.
+   */
   const updateProduct = (productId: string, productData: Partial<Product>) => {
     updateDoc(doc(firestore, 'products', productId), productData).catch(error => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `products/${productId}`, operation: 'update', requestResourceData: productData })));
   }
 
+  /**
+   * Elimina un producto de Firestore.
+   * @param {string} productId - ID del producto a eliminar.
+   */
   const deleteProduct = (productId: string) => {
     deleteDoc(doc(firestore, 'products', productId)).catch(error => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `products/${productId}`, operation: 'delete' })));
   }
   
+  /**
+   * Elimina un usuario de Firestore.
+   * @param {string} userId - ID del usuario a eliminar.
+   */
   const deleteUser = (userId: string) => {
     deleteDoc(doc(firestore, 'users', userId)).catch(error => errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `users/${userId}`, operation: 'delete' })));
   }
 
+  // Objeto de valor del contexto que se pasa a los componentes hijos.
   const value: AppContextType = {
     cart, addToCart, removeFromCart, updateCartQuantity, clearCart, cartTotal, cartCount,
     addOrder, updateOrderStatus,
@@ -415,6 +467,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
 /**
  * Hook para acceder fácilmente al contexto de la aplicación.
+ * @returns {AppContextType} El valor del contexto de la aplicación.
  */
 export const useAppContext = () => {
   const context = useContext(AppContext);

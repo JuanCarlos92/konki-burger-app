@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -12,12 +13,12 @@ import { PlusCircle } from "lucide-react";
  * Propiedades para el componente ProductCard.
  */
 interface ProductCardProps {
-  product: Product;
+  product: Product; // El objeto del producto que se va a mostrar.
 }
 
 /**
- * Componente que muestra la información de un único producto en una tarjeta.
- * Incluye imagen, nombre, descripción, precio y un botón para añadirlo al carrito.
+ * Componente que muestra la información de un único producto en una tarjeta interactiva.
+ * Incluye la imagen, nombre, descripción, precio y un botón para añadirlo al carrito.
  * @param {ProductCardProps} props - Las propiedades del componente.
  */
 export function ProductCard({ product }: ProductCardProps) {
@@ -26,7 +27,8 @@ export function ProductCard({ product }: ProductCardProps) {
 
   /**
    * Maneja el evento de clic en el botón "Añadir al Carrito".
-   * Llama a la función `addToCart` del contexto y muestra una notificación de éxito.
+   * Llama a la función `addToCart` del contexto de la aplicación y muestra una notificación
+   * de éxito para dar feedback al usuario.
    */
   const handleAddToCart = () => {
     addToCart(product);
@@ -39,23 +41,25 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden h-full transform transition-all duration-300 hover:scale-105 hover:shadow-primary/20 hover:shadow-2xl">
       <CardHeader className="p-0">
-        {/* Contenedor de la imagen del producto */}
+        {/* Contenedor de la imagen del producto. `aspect-video` mantiene la proporción 16:9. */}
         <div className="relative aspect-video">
-          <Image
-            src={product.image.src}
-            alt={product.image.alt}
-            data-ai-hint={product.image.aiHint}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover"
-          />
+          {product.imageUrl && (
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover"
+            />
+          )}
         </div>
-        {/* Contenedor del título y la descripción */}
+        {/* Contenededor del título y la descripción */}
         <div className="p-6">
             <CardTitle className="font-headline text-2xl">{product.name}</CardTitle>
             <CardDescription className="mt-2 text-base">{product.description}</CardDescription>
         </div>
       </CardHeader>
+      {/* `flex-grow` permite que el contenido ocupe el espacio disponible, empujando el footer hacia abajo. */}
       <CardContent className="flex-grow"></CardContent>
       {/* Pie de la tarjeta con el precio y el botón de acción */}
       <CardFooter className="flex justify-between items-center p-6 pt-0">

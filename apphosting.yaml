@@ -9,14 +9,14 @@ runConfig:
   # CONFIGURACIÓN DE VARIABLES DE ENTORNO Y SECRETOS
   env:
     - variable: GMAIL_USER
-      # El nombre del usuario de Gmail que se usará para enviar correos.
+      # El nombre del secreto almacenado en Google Secret Manager que contiene el usuario de Gmail.
       secret: GMAIL_USER
-      # INDICAMOS QUE EL SECRETO DEBE ESTAR DISPONIBLE EN TIEMPO DE EJECUCIÓN
+      # INDICA QUE EL SECRETO DEBE ESTAR DISPONIBLE EN TIEMPO DE EJECUCIÓN
       availability:
         - RUNTIME
     - variable: GMAIL_APP_PASSWORD
-      # La contraseña de aplicación generada para la cuenta de Gmail.
+      # El nombre del secreto que contiene la contraseña de aplicación de Gmail.
       secret: GMAIL_APP_PASSWORD
-      # INDICAMOS QUE EL SECRETO DEBE ESTAR DISPONIBLE EN TIEMPO DE EJECUCIÓN
+      # INDICA QUE EL SECRETO DEBE ESTAR DISPONIBLE EN TIEMPO DE EJECUCIÓN
       availability:
         - RUNTIME

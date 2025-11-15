@@ -23,11 +23,12 @@ import type { User } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /**
- * Página de administración para gestionar todos los usuarios registrados.
+ * Página de administración para gestionar todos los usuarios registrados en la aplicación.
+ * Muestra una tabla con la información de cada usuario y permite realizar acciones sobre ellos.
  */
 export default function AdminUsersPage() {
   const firestore = useFirestore();
-  // Obtiene la colección de usuarios de Firestore.
+  // Obtiene la colección de usuarios de Firestore en tiempo real.
   const usersQuery = useMemoFirebase(() => collection(firestore, 'users'), [firestore]);
   const { data: users, isLoading } = useCollection<User>(usersQuery);
 
@@ -50,7 +51,7 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* Muestra esqueletos de carga mientras se obtienen los datos. */}
+              {/* Muestra esqueletos de carga mientras se obtienen los datos de los usuarios. */}
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
@@ -59,7 +60,7 @@ export default function AdminUsersPage() {
                     </TableCell>
                   </TableRow>
                 ))
-              // Muestra un mensaje si no hay usuarios.
+              // Muestra un mensaje si no hay usuarios registrados.
               ) : !users || users.length === 0 ? (
                 <TableRow>
                     <TableCell colSpan={3} className="text-center h-24">
@@ -73,7 +74,7 @@ export default function AdminUsersPage() {
                     <TableCell>
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          {/* Usa un servicio de avatares basado en el email para generar una imagen. */}
+                          {/* Usa un servicio de avatares (avatar.vercel.sh) basado en el hash del email para generar una imagen de perfil única. */}
                           <AvatarImage src={`https://avatar.vercel.sh/${user.email}.png`} alt={user.name} />
                           <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
@@ -87,7 +88,7 @@ export default function AdminUsersPage() {
                       <div className="text-sm">{user.address}</div>
                     </TableCell>
                     <TableCell className="text-right">
-                      {/* Componente con los botones de acción para el usuario. */}
+                      {/* Componente que contiene los botones de acción para el usuario (p.ej., Eliminar, Restablecer Contraseña). */}
                       <UserActions user={user} />
                     </TableCell>
                   </TableRow>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -11,20 +12,20 @@ import type { CartItem as CartItemType } from "@/lib/types";
  * Propiedades para el componente CartItem.
  */
 interface CartItemProps {
-  item: CartItemType;
+  item: CartItemType; // El objeto del artículo del carrito que se va a renderizar.
 }
 
 /**
- * Componente que representa un único artículo en el carrito de compras.
- * Muestra la imagen, nombre, precio y controles para modificar la cantidad o eliminarlo.
+ * Componente que representa un único artículo dentro del carrito de compras.
+ * Muestra la imagen, nombre, precio y controles para modificar la cantidad o eliminar el artículo.
  * @param {CartItemProps} props - Las propiedades del componente.
  */
 export function CartItem({ item }: CartItemProps) {
   const { updateCartQuantity, removeFromCart } = useAppContext();
 
   /**
-   * Maneja el cambio de cantidad del artículo.
-   * @param {number} newQuantity - La nueva cantidad.
+   * Maneja el cambio de cantidad del artículo. Llama a la función del contexto.
+   * @param {number} newQuantity - La nueva cantidad deseada.
    */
   const handleQuantityChange = (newQuantity: number) => {
     updateCartQuantity(item.product.id, newQuantity);
@@ -34,14 +35,15 @@ export function CartItem({ item }: CartItemProps) {
     <div className="flex items-center space-x-4 py-4">
       {/* Imagen del producto */}
       <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md">
-        <Image
-          src={item.product.image.src}
-          alt={item.product.image.alt}
-          data-ai-hint={item.product.image.aiHint}
-          fill
-          sizes="80px"
-          className="object-cover"
-        />
+        {item.product.imageUrl && (
+            <Image
+            src={item.product.imageUrl}
+            alt={item.product.name}
+            fill
+            sizes="80px"
+            className="object-cover"
+            />
+        )}
       </div>
 
       {/* Detalles del producto y controles de cantidad */}
@@ -60,7 +62,7 @@ export function CartItem({ item }: CartItemProps) {
           >
             <Minus className="h-4 w-4" />
           </Button>
-          {/* Input para mostrar y cambiar la cantidad */}
+          {/* Input para mostrar y cambiar la cantidad directamente */}
           <Input
             type="number"
             className="h-8 w-12 text-center mx-2"

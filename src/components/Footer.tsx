@@ -1,17 +1,16 @@
-import { Menu } from 'lucide-react';
+
 
 /**
  * Componente del pie de página de la aplicación.
- * Muestra información de copyright y un pequeño logo.
+ * Muestra información de copyright y un pequeño logo. Es consistente en todo el sitio público.
  */
 export function Footer() {
     return (
-        <footer className="border-t py-6 md:py-8">
-            <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
+        <footer className="border-t">
+            <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-6 md:flex-row">
                 <div className="flex items-center gap-2">
-                    <Menu className="h-6 w-6 text-primary" />
                     <p className="text-center text-sm leading-loose text-muted-foreground md:text-left">
-                        Construido por tu hamburguesería favorita.
+                        C. el Bierzo, 38320 La Laguna, Santa Cruz de Tenerife
                     </p>
                 </div>
                 <p className="text-center text-sm text-muted-foreground md:text-right">

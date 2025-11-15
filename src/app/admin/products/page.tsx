@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -28,26 +29,26 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Página de administración para gestionar los productos del menú.
- * Permite añadir, editar y eliminar productos.
+ * Permite ver una lista de todos los productos y realizar operaciones CRUD (Crear, Leer, Actualizar, Eliminar).
  */
 export default function AdminProductsPage() {
   const firestore = useFirestore();
-  // Estado para controlar la visibilidad del formulario de producto (en un diálogo).
+  // Estado para controlar la visibilidad del formulario de producto (que se muestra en un diálogo modal).
   const [isFormOpen, setIsFormOpen] = useState(false);
-  // Estado para almacenar el producto que se está editando. Si es `undefined`, el formulario es para crear.
+  // Estado para almacenar el producto que se está editando. Si es `undefined`, el formulario es para crear un nuevo producto.
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
 
-  // Obtiene la colección de productos de Firestore.
+  // Obtiene la colección de productos de Firestore en tiempo real.
   const productsQuery = useMemoFirebase(() => collection(firestore, 'products'), [firestore]);
   const { data: products, isLoading: isLoadingProducts } = useCollection<Product>(productsQuery);
 
-  // Obtiene la colección de categorías de Firestore.
+  // Obtiene la colección de categorías de Firestore para poder mostrar el nombre de la categoría.
   const categoriesQuery = useMemoFirebase(() => collection(firestore, 'categories'), [firestore]);
   const { data: categories, isLoading: isLoadingCategories } = useCollection<Category>(categoriesQuery);
 
   /**
-   * Abre el formulario en modo de edición con los datos del producto seleccionado.
-   * @param {Product} product - El producto a editar.
+   * Abre el formulario en modo de edición, pasando los datos del producto seleccionado.
+   * @param {Product} product - El producto que se va a editar.
    */
   const handleEdit = (product: Product) => {
     setEditingProduct(product);
@@ -55,7 +56,7 @@ export default function AdminProductsPage() {
   };
   
   /**
-   * Abre el formulario en modo de creación (sin datos de producto).
+   * Abre el formulario en modo de creación (reseteando cualquier producto en edición).
    */
   const handleAdd = () => {
     setEditingProduct(undefined);
@@ -64,14 +65,15 @@ export default function AdminProductsPage() {
 
   /**
    * Obtiene el nombre de una categoría a partir de su ID.
-   * @param {string} categoryId - El ID de la categoría.
+   * Busca en la lista de categorías cargada.
+   * @param {string} categoryId - El ID de la categoría a buscar.
    * @returns {string} El nombre de la categoría o 'N/A' si no se encuentra.
    */
   const getCategoryName = (categoryId: string) => {
     return (categories || []).find(c => c.id === categoryId)?.name || 'N/A';
   }
 
-  // Estado de carga combinado para productos y categorías.
+  // Estado de carga combinado: la interfaz muestra un esqueleto de carga si los productos o las categorías están cargando.
   const isLoading = isLoadingProducts || isLoadingCategories;
 
   return (
@@ -101,7 +103,7 @@ export default function AdminProductsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* Muestra esqueletos de carga mientras los datos están llegando. */}
+              {/* Muestra esqueletos de carga mientras los datos se están obteniendo. */}
               {isLoading ? (
                  Array.from({ length: 5 }).map((_, i) => (
                     <TableRow key={i}>
@@ -115,13 +117,15 @@ export default function AdminProductsPage() {
                     No se encontraron productos. ¡Añade uno para empezar!
                   </TableCell>
                 </TableRow>
-              // Renderiza la tabla de productos.
+              // Renderiza la tabla con la lista de productos.
               ) : (
               products.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell>
                     <div className="relative h-12 w-12 rounded-md overflow-hidden">
-                        <Image src={product.image.src} alt={product.image.alt} fill className="object-cover" />
+                        {product.imageUrl && (
+                            <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+                        )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -140,7 +144,8 @@ export default function AdminProductsPage() {
         </CardContent>
       </Card>
       
-      {/* Componente del formulario, que se muestra en un diálogo. */}
+      {/* Componente del formulario, que se muestra en un diálogo. Se pasa el producto a editar
+          y los estados para controlar su visibilidad. */}
       <ProductForm 
         product={editingProduct} 
         open={isFormOpen} 

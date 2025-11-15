@@ -1,3 +1,5 @@
+"use server";
+
 // En una aplicación de producción, usarías un servicio como Nodemailer, SendGrid, Mailgun o AWS SES.
 // Instalarías su SDK (p. ej., `npm install nodemailer`) y lo configurarías con tus credenciales.
 import nodemailer from 'nodemailer';
@@ -22,83 +24,49 @@ interface ConfirmationEmailPayload {
 }
 
 /**
- * Envía un correo de confirmación de pedido usando Nodemailer con Gmail si las credenciales están disponibles.
- * Si no, simula el envío registrando en la consola para depuración.
+ * Envía un correo de confirmación de pedido usando Nodemailer con Gmail.
+ * Las credenciales se cargan de forma segura desde las variables de entorno/secretos.
  * @param {ConfirmationEmailPayload} payload - Los datos para el correo de confirmación.
- * @throws {Error} Lanza un error si el envío con Nodemailer falla.
  */
 export async function sendOrderConfirmationEmail(payload: ConfirmationEmailPayload): Promise<void> {
 
-  console.log('--- DIAGNÓSTICO DE ENVÍO DE CORREO ---');
-  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
-    console.log('Credenciales de Gmail ENCONTRADAS. Intentando enviar correo real.');
-  } else {
-    console.log('Credenciales de Gmail NO ENCONTRADAS. Se procederá con la simulación.');
-  }
-  console.log('------------------------------------');
+  // Crea un "transportador" reutilizable usando el servicio SMTP de Gmail.
+  // Las credenciales se obtienen de las variables de entorno, que se configuran
+  // como secretos en Firebase App Hosting.
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER, // Tu dirección de Gmail.
+      pass: process.env.GMAIL_APP_PASSWORD, // La contraseña de aplicación de 16 caracteres.
+    },
+  });
 
-  // Las credenciales se deben guardar de forma segura como variables de entorno/secretos,
-  // NUNCA directamente en el código. App Hosting las inyectará en `process.env`.
-  if (process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
-    // Crea un "transportador" reutilizable con la configuración para Gmail.
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD, // ¡IMPORTANTE! Usa una contraseña de aplicación, no tu contraseña normal.
-      },
-    });
+  // Construye el cuerpo del correo en formato HTML para un mejor aspecto.
+  const emailBody = `
+    <h1>¡Pedido Confirmado!</h1>
+    <p>Hola ${payload.name},</p>
+    <p>¡Buenas noticias! Tu pedido <strong>#${payload.orderId}</strong> ha sido aceptado y estará listo para recoger a las <strong>${payload.pickupTime}</strong>.</p>
+    <h3>Resumen del pedido:</h3>
+    <ul>
+      ${payload.items.map(item => 
+        `<li>${item.quantity}x ${item.product.name} - $${(item.product.price * item.quantity).toFixed(2)}</li>`
+      ).join('')}
+    </ul>
+    <h3>Total: $${payload.total.toFixed(2)}</h3>
+    <p>¡Gracias por tu pedido!</p>
+    <p>El equipo de Konki Burger</p>
+  `;
 
-    // Construye el HTML para la lista de artículos del pedido.
-    const itemsHtml = payload.items.map(item => 
-      `<li>${item.quantity}x ${item.product.name} - $${(item.product.price * item.quantity).toFixed(2)}</li>`
-    ).join('');
+  // Define las opciones del correo (de, para, asunto, cuerpo).
+  const mailOptions = {
+    from: `"Konki Burger" <${process.env.GMAIL_USER}>`, // Dirección del remitente.
+    to: payload.to, // Dirección del destinatario.
+    subject: `¡Tu pedido #${payload.orderId} de Konki Burger está confirmado!`, // Asunto.
+    html: emailBody, // Cuerpo del correo en HTML.
+  };
 
-    // Define las opciones del correo.
-    const mailOptions = {
-      from: `"Konki Burger" <${process.env.GMAIL_USER}>`, // Dirección del remitente (tu cuenta de Gmail)
-      to: payload.to, // Dirección del destinatario
-      subject: `¡Tu pedido #${payload.orderId} de Konki Burger está confirmado!`, // Asunto del correo
-      html: `
-        <h1>Hola ${payload.name},</h1>
-        <p>¡Buenas noticias! Tu pedido ha sido aceptado y estará listo para recoger a las <strong>${payload.pickupTime}</strong>.</p>
-        <h3>Resumen del pedido:</h3>
-        <ul>${itemsHtml}</ul>
-        <h3>Total: $${payload.total.toFixed(2)}</h3>
-        <p>¡Gracias por tu pedido!</p>
-        <p>El equipo de Konki Burger</p>
-      `,
-    };
-
-    try {
-      await transporter.sendMail(mailOptions);
-      console.log(`Correo real enviado a ${payload.to} a través de Nodemailer.`);
-    } catch (error: any) {
-      console.error('Error al enviar correo con Nodemailer. Este es el error completo:');
-      console.error(error);
-      // CRÍTICO: Volver a lanzar el error para que la Server Action sepa que algo falló.
-      throw new Error(`Fallo en el envío con Nodemailer: ${error.message}`);
-    }
-
-  } else {
-    // --- MODO DE SIMULACIÓN (si no hay credenciales) ---
-    console.log("====================================");
-    console.log("✉️ SIMULANDO ENVÍO DE CORREO (no se encontraron credenciales de Gmail) ✉️");
-    console.log("====================================");
-    console.log(`Para: ${payload.to}`);
-    console.log(`Asunto: ¡Tu pedido #${payload.orderId} de Konki Burger está confirmado!`);
-    console.log("\n--- Cuerpo del mensaje ---\n");
-    console.log(`Hola ${payload.name},\n`);
-    console.log(`¡Buenas noticias! Tu pedido ha sido aceptado y estará listo para recoger a las ${payload.pickupTime}.\n`);
-    console.log("Resumen del pedido:");
-    payload.items.forEach(item => {
-      console.log(`- ${item.quantity}x ${item.product.name} ($${(item.product.price * item.quantity).toFixed(2)})`);
-    });
-    console.log(`\nTotal: $${payload.total.toFixed(2)}\n`);
-    console.log("¡Gracias por tu pedido!");
-    console.log("El equipo de Konki Burger");
-    console.log("\n====================================");
-    console.log("✅ SIMULACIÓN COMPLETA ✅");
-    console.log("====================================");
-  }
+  // Envía el correo usando el transportador.
+  await transporter.sendMail(mailOptions);
+  
+  console.log(`Correo de confirmación enviado a ${payload.to}`);
 }

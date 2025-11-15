@@ -30,7 +30,7 @@ import { useAppContext } from "@/lib/contexts/AppContext";
 import { errorEmitter } from "@/firebase";
 
 /**
- * Esquema de validación para el formulario de inicio de sesión.
+ * Esquema de validación para el formulario de inicio de sesión utilizando Zod.
  */
 const formSchema = z.object({
   email: z.string().email({ message: "Por favor, introduce un email válido." }),
@@ -39,13 +39,14 @@ const formSchema = z.object({
 
 /**
  * Página de inicio de sesión.
+ * Permite a los usuarios existentes acceder a su cuenta.
  */
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAppContext();
   const { toast } = useToast();
 
-  // Configuración del formulario.
+  // Configuración del formulario con react-hook-form y el resolver de Zod.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { email: "", password: "" },
@@ -53,11 +54,11 @@ export default function LoginPage() {
 
   /**
    * Maneja el envío del formulario de inicio de sesión.
-   * @param {object} values - Los valores del formulario.
+   * @param {object} values - Los valores del formulario (email y contraseña).
    */
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      // Llama a la función de login del contexto.
+      // Llama a la función de login del contexto de la aplicación.
       await login(values.email, values.password);
       
       toast({
@@ -65,7 +66,7 @@ export default function LoginPage() {
         description: `¡Bienvenido de nuevo!`,
       });
 
-      // El layout de admin se encargará de redirigir a los administradores.
+      // El layout de admin se encargará de redirigir a los administradores al panel.
       // Los usuarios normales irán a la página de inicio.
       router.push("/");
 
@@ -78,7 +79,7 @@ export default function LoginPage() {
             description: "Por favor, comprueba tu email y contraseña e inténtalo de nuevo.",
         });
       } else {
-        // Para otros errores, se emite un error global para depuración.
+        // Para otros errores (p.ej., problemas de red), se emite un error global para depuración.
         const contextualError = new Error(`El inicio de sesión falló: ${error.message}`);
         errorEmitter.emit('permission-error', contextualError as any);
       }
@@ -87,6 +88,7 @@ export default function LoginPage() {
   
   /**
    * Maneja la solicitud de restablecimiento de contraseña.
+   * Envía un correo de Firebase Auth al email introducido en el formulario.
    */
   const handlePasswordReset = () => {
     const email = form.getValues("email");

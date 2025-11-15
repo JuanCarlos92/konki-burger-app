@@ -11,30 +11,31 @@ import {
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
-/** Tipo de utilidad para añadir un campo 'id' a un tipo T. */
+/** Tipo de utilidad para añadir un campo 'id' a un tipo genérico T. */
 type WithId<T> = T & { id: string };
 
 /**
- * Interfaz para el valor de retorno del hook useDoc.
- * @template T Tipo de los datos del documento.
+ * Interfaz para el valor de retorno del hook `useDoc`.
+ * @template T - El tipo de los datos del documento.
  */
 export interface UseDocResult<T> {
-  data: WithId<T> | null; // Datos del documento con ID, o null si no existe o está cargando.
-  isLoading: boolean;       // True si está cargando.
-  error: FirestoreError | Error | null; // Objeto de error, o null.
+  data: WithId<T> | null; // Datos del documento con su ID, o `null` si no existe o está cargando.
+  isLoading: boolean;       // `true` si la carga inicial está en progreso.
+  error: FirestoreError | Error | null; // Objeto de error si la suscripción falla.
 }
 
 /**
  * Hook de React para suscribirse a un único documento de Firestore en tiempo real.
- * Maneja referencias nulas.
+ * Escucha los cambios en el documento y actualiza el estado del componente automáticamente.
  *
- * ¡IMPORTANTE! DEBES MEMOIZAR el `memoizedDocRef` de entrada usando `useMemoFirebase`,
- * o ocurrirán comportamientos inesperados (re-suscripciones infinitas).
+ * ¡IMPORTANTE! Es crucial que el `memoizedDocRef` de entrada sea memoizado usando `useMemoFirebase`.
+ * Si no se memoiza, se creará una nueva instancia de la referencia en cada render, lo que provocará
+ * re-suscripciones infinitas y un rendimiento deficiente.
  *
- * @template T Tipo opcional para los datos del documento. Por defecto es `any`.
+ * @template T - Tipo opcional para los datos del documento. Por defecto es `any`.
  * @param {DocumentReference | null | undefined} memoizedDocRef -
- * La DocumentReference de Firestore. Espera si es null/undefined.
- * @returns {UseDocResult<T>} Un objeto con `data`, `isLoading`, y `error`.
+ * La `DocumentReference` de Firestore a la que suscribirse. Si es `null` o `undefined`, el hook esperará.
+ * @returns {UseDocResult<T>} Un objeto que contiene `data`, `isLoading` y `error`.
  */
 export function useDoc<T = any>(
   memoizedDocRef: DocumentReference<DocumentData> | null | undefined,
@@ -46,7 +47,7 @@ export function useDoc<T = any>(
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
-    // Si la referencia al documento es nula, resetea el estado.
+    // Si la referencia al documento es nula, resetea el estado y no hace nada.
     if (!memoizedDocRef) {
       setData(null);
       setIsLoading(false);
@@ -57,40 +58,40 @@ export function useDoc<T = any>(
     setIsLoading(true);
     setError(null);
 
-    // Crea el listener de Firestore para el documento.
+    // Crea el listener de Firestore para el documento usando `onSnapshot`.
     const unsubscribe = onSnapshot(
       memoizedDocRef,
       (snapshot: DocumentSnapshot<DocumentData>) => {
-        // En caso de éxito.
+        // Callback de éxito: se ejecuta cada vez que los datos del documento cambian.
         if (snapshot.exists()) {
-          // Si el documento existe, actualiza el estado con sus datos.
+          // Si el documento existe, actualiza el estado con sus datos, añadiendo el ID.
           setData({ ...(snapshot.data() as T), id: snapshot.id });
         } else {
-          // Si el documento no existe, el estado de `data` es null.
+          // Si el documento no existe (o ha sido eliminado), el estado de `data` es null.
           setData(null);
         }
         setError(null); // Limpia cualquier error anterior.
         setIsLoading(false);
       },
       (error: FirestoreError) => {
-        // En caso de error (ej. permisos).
+        // Callback de error: se ejecuta si el listener falla (p.ej., por falta de permisos).
         const contextualError = new FirestorePermissionError({
           operation: 'get',
           path: memoizedDocRef.path,
         })
 
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
+        setError(contextualError);
+        setData(null);
+        setIsLoading(false);
 
-        // Emite el error globalmente para que `FirebaseErrorListener` lo capture.
+        // Emite el error globalmente para que `FirebaseErrorListener` lo capture y lo muestre en desarrollo.
         errorEmitter.emit('permission-error', contextualError);
       }
     );
 
-    // Función de limpieza: se desuscribe del listener cuando el componente se desmonta.
+    // Función de limpieza: se desuscribe del listener cuando el componente se desmonta o la referencia cambia.
     return () => unsubscribe();
-  }, [memoizedDocRef]); // Vuelve a ejecutar el efecto si la referencia al documento cambia.
+  }, [memoizedDocRef]); // Vuelve a ejecutar el efecto si la referencia al documento memoizada cambia.
 
   return { data, isLoading, error };
 }

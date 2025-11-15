@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -29,7 +30,7 @@ import { useAppContext } from "@/lib/contexts/AppContext";
 import { errorEmitter } from "@/firebase";
 
 /**
- * Esquema de validación para el formulario de registro.
+ * Esquema de validación para el formulario de registro utilizando Zod.
  */
 const formSchema = z.object({
   name: z.string().min(2, { message: "El nombre debe tener al menos 2 caracteres." }),
@@ -39,14 +40,14 @@ const formSchema = z.object({
 });
 
 /**
- * Página de registro de nuevos usuarios.
+ * Página de registro para nuevos usuarios.
  */
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { register } = useAppContext();
 
-  // Configuración del formulario con react-hook-form y Zod.
+  // Configuración del formulario con react-hook-form y el resolver de Zod.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { name: "", email: "", address: "", password: "" },
@@ -59,7 +60,7 @@ export default function RegisterPage() {
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     register(values.name, values.email, values.address, values.password)
       .then(() => {
-        // Si el registro es exitoso, muestra una notificación y redirige al inicio.
+        // Si el registro es exitoso, muestra una notificación de bienvenida y redirige al usuario a la página de inicio.
         toast({
           title: "¡Cuenta Creada!",
           description: `¡Bienvenido a Konki Burger, ${values.name}!`,
@@ -67,8 +68,9 @@ export default function RegisterPage() {
         router.push("/");
       })
       .catch((error: any) => {
-        // Si hay un error (ej. el email ya existe), se emite un error global
-        // para que pueda ser capturado y mostrado en la superposición de desarrollo.
+        // Si hay un error durante el registro (p.ej., el email ya está en uso),
+        // se emite un error global para que pueda ser capturado y mostrado en la superposición de desarrollo de Next.js,
+        // facilitando la depuración.
         errorEmitter.emit('permission-error', error);
       });
   };
@@ -81,7 +83,7 @@ export default function RegisterPage() {
                 <Menu className="h-10 w-10 text-primary mx-auto" />
             </Link>
           <CardTitle className="text-3xl font-headline">Crear una Cuenta</CardTitle>
-          <CardDescription>¡Únete a la familia Konki Burger!</CardDescription>
+          <CardDescription>¡Únete a Konki Burger!</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -119,7 +121,7 @@ export default function RegisterPage() {
                   <FormItem>
                     <FormLabel>Dirección</FormLabel>
                     <FormControl>
-                      <Input placeholder="123 Calle Cósmica" {...field} />
+                      <Input placeholder="Calle, Número, CP, Ciudad, Provincia" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
