@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -38,7 +39,7 @@ export function Header() {
         {/* Logo y nombre de la aplicación, enlazados a la página de inicio. */}
         <Link href="/" className="mr-6 flex items-center space-x-2">
           <Menu className="h-6 w-6 text-primary" />
-          <span className="font-bold font-headline text-lg sm:inline-block">
+          <span className="hidden sm:inline-block font-bold font-headline text-lg">
             Konki Burger
           </span>
         </Link>

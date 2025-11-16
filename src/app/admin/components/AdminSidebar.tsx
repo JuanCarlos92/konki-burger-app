@@ -1,8 +1,10 @@
+
+
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Package, ShoppingBasket, Users, Home, LogOut } from "lucide-react";
+import { Menu, Package, ShoppingBasket, Users, Home, LogOut, PanelLeftClose, X } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -13,10 +15,13 @@ import {
   SidebarFooter,
   SidebarProvider,
   SidebarInset,
+  SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAppContext } from "@/lib/contexts/AppContext";
 import { ClientTooltipProvider } from "@/components/ui/client-tooltip-provider";
+import { Button } from "@/components/ui/button";
+import { SheetClose } from "@/components/ui/sheet";
 
 // Define los elementos de navegación para la barra lateral del administrador.
 // Cada objeto contiene la ruta, el icono y la etiqueta para un enlace del menú.
@@ -44,12 +49,8 @@ export function AdminSidebar({ children }: { children: React.ReactNode }) {
       <SidebarProvider>
         <Sidebar>
           {/* Cabecera de la barra lateral con el logo y el nombre de la aplicación. */}
-          <SidebarHeader>
-            <Link href="/" className="flex items-center gap-2">
-              <Menu className="w-8 h-8 text-primary" />
-              <span className="font-bold text-lg font-headline">Konki Burger</span>
-            </Link>
-          </SidebarHeader>
+          
+          
 
           {/* Contenido principal de la barra lateral con el menú de navegación. */}
           <SidebarContent>
@@ -76,7 +77,7 @@ export function AdminSidebar({ children }: { children: React.ReactNode }) {
                   <Link href="/">
                     <SidebarMenuButton>
                       <Home />
-                      Volver al Sitio
+                      Volver a la Web
                     </SidebarMenuButton>
                   </Link>
                 </SidebarMenuItem>

@@ -7,7 +7,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription }
 import { useAppContext } from "@/lib/contexts/AppContext";
 import type { Product } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
-import { PlusCircle } from "lucide-react";
 
 /**
  * Propiedades para el componente ProductCard.
@@ -50,6 +49,7 @@ export function ProductCard({ product }: ProductCardProps) {
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               className="object-cover"
+              priority={product.name === 'Konki Clásica'} // <-- ¡Aquí está la solución!
             />
           )}
         </div>
@@ -65,7 +65,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <CardFooter className="flex justify-between items-center p-6 pt-0">
         <p className="text-2xl font-bold font-headline text-primary">${product.price.toFixed(2)}</p>
         <Button onClick={handleAddToCart} style={{ backgroundColor: 'hsl(var(--accent))', color: 'hsl(var(--accent-foreground))'}}>
-          <PlusCircle className="mr-2 h-5 w-5" />
+          
           Añadir al Carrito
         </Button>
       </CardFooter>
